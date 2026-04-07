@@ -1,0 +1,5 @@
+[
+  { "id": 1, "concept": "Nómina NTT Data", "amount": 2500, "type": "income", "date": "2024-03-01" },
+  { "id": 2, "concept": "Alquiler", "amount": -800, "type": "expense", "date": "2024-03-02" },
+  { "id": 3, "concept": "Suscripción Netflix", "amount": -15.99, "type": "expense", "date": "2024-03-05" }
+]
