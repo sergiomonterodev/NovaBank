@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import { store } from '../store.js'; // <--- IMPORTANTE: la ruta con ../
 
 export class AppMain extends LitElement {
   static properties = {
@@ -40,7 +41,15 @@ export class AppMain extends LitElement {
 
   constructor() {
     super();
-    this.activeTab = 'resumen'; // Pestaña por defecto
+    this.activeTab = 'resumen';
+    
+    // Suscripción al store
+    store.subscribe(() => {
+      this.requestUpdate(); 
+    });
+
+    // Llamada inicial
+    store.fetchMovements();
   }
 
   render() {
@@ -62,8 +71,8 @@ export class AppMain extends LitElement {
 
   _renderTab() {
     switch (this.activeTab) {
-      case 'resumen': return html`<h2>Visualización de Gráficos (Próximamente)</h2>`;
-      case 'movimientos': return html`<h2>Listado de Movimientos</h2>`;
+      case 'resumen': return html`<h2>Saldo Total: ${store.getSaldoTotal()}€</h2>`;
+      case 'movimientos': return html`<h2>Lista: ${store.movements.length} movimientos</h2>`;
       case 'transferir': return html`<h2>Nuevo Movimiento</h2>`;
       default: return html`<p>Selecciona una opción</p>`;
     }
