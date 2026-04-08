@@ -1,15 +1,16 @@
-import { LitElement, html, css } from 'lit';
-import { store } from '../store.js'; // <--- IMPORTANTE: la ruta con ../
+import { LitElement, html, css } from "lit";
+import { store } from "../store.js";
+import "./movimientos-table.js";
 
 export class AppMain extends LitElement {
   static properties = {
-    activeTab: { type: String }
+    activeTab: { type: String },
   };
 
   static styles = css`
     :host {
       display: block;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
@@ -41,11 +42,11 @@ export class AppMain extends LitElement {
 
   constructor() {
     super();
-    this.activeTab = 'resumen';
-    
+    this.activeTab = "resumen";
+
     // Suscripción al store
     store.subscribe(() => {
-      this.requestUpdate(); 
+      this.requestUpdate();
     });
 
     // Llamada inicial
@@ -57,26 +58,49 @@ export class AppMain extends LitElement {
       <header>
         <h1>NovaBank 🏦</h1>
         <nav>
-          <button ?active=${this.activeTab === 'resumen'} @click=${() => this.activeTab = 'resumen'}>Resumen</button>
-          <button ?active=${this.activeTab === 'movimientos'} @click=${() => this.activeTab = 'movimientos'}>Movimientos</button>
-          <button ?active=${this.activeTab === 'transferir'} @click=${() => this.activeTab = 'transferir'}>Transferir</button>
+          <button
+            ?active=${this.activeTab === "resumen"}
+            @click=${() => (this.activeTab = "resumen")}
+          >
+            Resumen
+          </button>
+          <button
+            ?active=${this.activeTab === "movimientos"}
+            @click=${() => (this.activeTab = "movimientos")}
+          >
+            Movimientos
+          </button>
+          <button
+            ?active=${this.activeTab === "transferir"}
+            @click=${() => (this.activeTab = "transferir")}
+          >
+            Transferir
+          </button>
         </nav>
       </header>
 
-      <main class="content">
-        ${this._renderTab()}
-      </main>
+      <main class="content">${this._renderTab()}</main>
     `;
   }
 
   _renderTab() {
     switch (this.activeTab) {
-      case 'resumen': return html`<h2>Saldo Total: ${store.getSaldoTotal()}€</h2>`;
-      case 'movimientos': return html`<h2>Lista: ${store.movements.length} movimientos</h2>`;
-      case 'transferir': return html`<h2>Nuevo Movimiento</h2>`;
-      default: return html`<p>Selecciona una opción</p>`;
+      case "resumen":
+        return html`
+          <h2>Resumen General</h2>
+          <p>Saldo Actual: <strong>${store.getSaldoTotal()}€</strong></p>
+        `;
+      case "movimientos":
+        return html`
+          <h2>Historial de Movimientos</h2>
+          <movimientos-table></movimientos-table>
+        `;
+      case "transferir":
+        return html`<h2>Nuevo Movimiento</h2>`;
+      default:
+        return html`<p>Selecciona una opción</p>`;
     }
   }
 }
 
-customElements.define('app-main', AppMain);
+customElements.define("app-main", AppMain);
