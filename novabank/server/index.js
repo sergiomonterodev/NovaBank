@@ -9,6 +9,35 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = 'novabank_secret_key'; // En producción, esto va en un .env
+
+const USERS_PATH = path.join(__dirname, 'data', 'users.json');
+
+const getUsers = () => {
+    const data = fs.readFileSync(USERS_PATH, 'utf-8');
+    return JSON.parse(data);
+};
+
+// Endpoint de Login
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+  const users = getUsers(); // Leemos del archivo JSON
+  
+  const user = users.find(u => u.email === email && u.password === password);
+
+  if (user) {
+    const token = jwt.sign(
+      { id: user.id, role: user.role }, 
+      SECRET_KEY, 
+      { expiresIn: '1h' }
+    );
+    res.json({ token, role: user.role });
+  } else {
+    res.status(401).json({ message: "Credenciales incorrectas" });
+  }
+});
+
 const DATA_PATH = path.join(__dirname, 'data', 'movements.json');
 
 // Helper para leer el JSON

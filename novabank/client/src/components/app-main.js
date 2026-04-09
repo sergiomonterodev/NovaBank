@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { store } from "../store.js";
 import "./movimientos-table.js";
 import "./transferir-form.js";
+import "./login-view.js";
 
 export class AppMain extends LitElement {
   static properties = {
@@ -55,9 +56,20 @@ export class AppMain extends LitElement {
   }
 
   render() {
+    if (!store.user.isLoggedIn) {
+      return html`<login-view></login-view>`;
+    }
+
     return html`
       <header>
-        <h1>NovaBank 🏦</h1>
+        <div
+          style="display: flex; justify-content: space-between; align-items: center;"
+        >
+          <h1>NovaBank 🏦</h1>
+          <button @click=${() => store.logout()}>
+            Cerrar Sesión (${store.user.role})
+          </button>
+        </div>
         <nav>
           <button
             ?active=${this.activeTab === "resumen"}
@@ -77,6 +89,15 @@ export class AppMain extends LitElement {
           >
             Transferir
           </button>
+
+          ${store.user.role === "admin"
+            ? html`<button
+                ?active=${this.activeTab === "admin"}
+                @click=${() => (this.activeTab = "admin")}
+              >
+                Admin
+              </button>`
+            : ""}
         </nav>
       </header>
 
