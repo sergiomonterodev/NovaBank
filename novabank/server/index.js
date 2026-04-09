@@ -1,3 +1,26 @@
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = 'novabank_secret_key'; // En producción, esto va en un .env
+
+// Mock de usuarios (luego pasarlo a un users.json)
+const users = [
+  { id: 1, email: 'admin@nova.com', password: 'admin', role: 'admin' },
+  { id: 2, email: 'user@nova.com', password: 'user', role: 'user' }
+];
+
+// Endpoint de Login
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email && u.password === password);
+
+  if (user) {
+    const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
+    res.json({ token, role: user.role });
+  } else {
+    res.status(401).json({ message: "Credenciales incorrectas" });
+  }
+});
+
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
