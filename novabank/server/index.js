@@ -1,3 +1,14 @@
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+const PORT = 3000;
+
+app.use(cors());
+app.use(express.json());
+
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = 'novabank_secret_key'; // En producción, esto va en un .env
 
@@ -19,18 +30,6 @@ app.post('/api/login', (req, res) => {
     res.status(401).json({ message: "Credenciales incorrectas" });
   }
 });
-
-
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-
-const app = express();
-const PORT = 3000;
-
-app.use(cors());
-app.use(express.json());
 
 const DATA_PATH = path.join(__dirname, 'data', 'movements.json');
 
