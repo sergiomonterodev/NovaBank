@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { store } from "../store.js";
 import "./movimientos-table.js";
+import "./transferir-form.js";
 
 export class AppMain extends LitElement {
   static properties = {
@@ -96,7 +97,10 @@ export class AppMain extends LitElement {
           <movimientos-table></movimientos-table>
         `;
       case "transferir":
-        return html`<h2>Nuevo Movimiento</h2>`;
+        return html`
+          <h2>Nueva Transferencia / Gasto</h2>
+          <transferir-form></transferir-form>
+        `;
       default:
         return html`<p>Selecciona una opción</p>`;
     }
