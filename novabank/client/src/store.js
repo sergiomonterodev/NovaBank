@@ -1,13 +1,23 @@
 class BankStore {
   constructor() {
-    // Array vacío de movements
     this.movements = [];
     this.subscribers = [];
+
+    const savedRole = localStorage.getItem("role");
+    const savedToken = localStorage.getItem("token");
+    const savedUserId = localStorage.getItem("userId");
+
     this.user = {
-      isLoggedIn: !!localStorage.getItem("token"),
-      role: localStorage.getItem("role") || null,
-      token: localStorage.getItem("token") || null,
+      isLoggedIn: !!savedToken,
+      token: savedToken,
+      role: savedRole,
+      id: savedUserId ? parseInt(savedUserId) : null, // Convertimos a número
     };
+
+    // Si ya estaba logueado, pedimos sus datos de inmediato
+    if (this.user.isLoggedIn) {
+      this.fetchMovements();
+    }
   }
 
   // Método para que los componentes se "suscriban" a los cambios
@@ -22,12 +32,16 @@ class BankStore {
 
   // Llamada al backend
   async fetchMovements() {
+    if (!this.user.id) return; // Si no hay usuario, no pedimos nada
+
     try {
-      const response = await fetch("http://localhost:3000/api/movements");
+      const response = await fetch(
+        `http://localhost:3000/api/movements?userId=${this.user.id}`,
+      );
       this.movements = await response.json();
-      this.notify(); // ¡Avisamos a todos que ya hay datos!
+      this.notify();
     } catch (error) {
-      console.error("Error cargando movimientos:", error);
+      console.error("Error:", error);
     }
   }
 
@@ -60,19 +74,36 @@ class BankStore {
 
   // Método para loguearse
   async login(email, password) {
-    const response = await fetch("http://localhost:3000/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch("http://localhost:3000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      this.user = { isLoggedIn: true, role: data.role, token: data.token };
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-      this.notify();
-      return true;
+      if (response.ok) {
+        const data = await response.json();
+
+        this.user = {
+          isLoggedIn: true,
+          role: data.role,
+          token: data.token,
+          id: data.userId,
+        };
+
+        // Guardamos en persistencia
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.userId);
+
+        this.notify();
+
+        // Cargamos los movimientos del usuario recién logueado
+        await this.fetchMovements();
+        return true;
+      }
+    } catch (error) {
+      console.error("Error crítico en el login:", error);
     }
     return false;
   }
