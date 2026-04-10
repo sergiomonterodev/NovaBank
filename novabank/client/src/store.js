@@ -36,6 +36,28 @@ class BankStore {
     return this.movements.reduce((acc, mov) => acc + mov.amount, 0);
   }
 
+  // Borrar movimiento
+  async deleteMovement(id) {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/movements/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (response.ok) {
+        // Si el servidor dice que OK, lo quitamos de nuestra lista local para que la UI se actualice
+        this.movements = this.movements.filter((m) => m.id !== id);
+        this.notify();
+        return true;
+      }
+    } catch (error) {
+      console.error("Error al borrar:", error);
+    }
+    return false;
+  }
+
   // Método para loguearse
   async login(email, password) {
     const response = await fetch("http://localhost:3000/api/login", {
