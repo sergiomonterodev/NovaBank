@@ -3,6 +3,7 @@ import { store } from "../store.js";
 import "./movimientos-table.js";
 import "./transferir-form.js";
 import "./login-view.js";
+import "./resumen-grafico.js";
 
 export class AppMain extends LitElement {
   static properties = {
@@ -109,8 +110,25 @@ export class AppMain extends LitElement {
     switch (this.activeTab) {
       case "resumen":
         return html`
-          <h2>Resumen General</h2>
-          <p>Saldo Actual: <strong>${store.getSaldoTotal()}€</strong></p>
+          <h2>Estado de cuenta</h2>
+          <div style="text-align: center;">
+            <p>
+              Saldo Total:
+              <b
+                style="font-size: 1.5em; color: ${store.getSaldoTotal() >= 0
+                  ? "green"
+                  : "red"}"
+              >
+                ${store.getSaldoTotal().toFixed(2)}€
+              </b>
+            </p>
+          </div>
+
+          <resumen-grafico></resumen-grafico>
+
+          <div style="margin-top: 20px; font-size: 0.9em; color: #666;">
+            Última actualización: ${new Date().toLocaleTimeString()}
+          </div>
         `;
       case "movimientos":
         return html`
