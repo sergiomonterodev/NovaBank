@@ -2,6 +2,7 @@ class BankStore {
   constructor() {
     this.movements = [];
     this.subscribers = [];
+    this.allUsers = [];
 
     const savedRole = localStorage.getItem("role");
     const savedToken = localStorage.getItem("token");
@@ -110,9 +111,24 @@ class BankStore {
 
   // Método para cerrar sesión
   logout() {
-    this.user = { isLoggedIn: false, role: null, token: null };
+    this.user = { isLoggedIn: false, role: null, token: null, id: null };
+    this.movements = []; // Limpiamos movimientos
+    this.allUsers = [];  // Limpiamos todos los usuarios
     localStorage.clear();
     this.notify();
+  }
+
+  // Método para cargar todos los usuarios
+  async fetchAllUsers() {
+    if (this.user.role !== "admin") return;
+
+    try {
+      const response = await fetch("http://localhost:3000/api/admin/users");
+      this.allUsers = await response.json();
+      this.notify();
+    } catch (error) {
+      console.error("Error cargando usuarios:", error);
+    }
   }
 }
 

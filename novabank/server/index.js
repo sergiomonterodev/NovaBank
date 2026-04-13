@@ -78,6 +78,18 @@ app.delete("/api/movements/:id", (req, res) => {
   }
 });
 
+// Endpoint para obtener todos los usuarios (Solo para el panel Admin)
+app.get('/api/admin/users', (req, res) => {
+    try {
+        const users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+        // Devolvemos los usuarios pero sin la contraseña por seguridad
+        const safeUsers = users.map(({ password, ...user }) => user);
+        res.json(safeUsers);
+    } catch (error) {
+        res.status(500).json({ message: "Error al obtener usuarios" });
+    }
+});
+
 // Simulación de Cron Job: Cada 2 minutos (120000 ms)
 setInterval(() => {
   try {

@@ -4,6 +4,7 @@ import "./movimientos-table.js";
 import "./transferir-form.js";
 import "./login-view.js";
 import "./resumen-grafico.js";
+import "./admin-panel.js";
 
 export class AppMain extends LitElement {
   static properties = {
@@ -49,6 +50,9 @@ export class AppMain extends LitElement {
 
     // Suscripción al store
     store.subscribe(() => {
+      if (!store.user.isLoggedIn || (this.activeTab === 'admin' && store.user.role !== 'admin')) {
+        this.activeTab = 'resumen';
+      }
       this.requestUpdate();
     });
 
@@ -139,6 +143,12 @@ export class AppMain extends LitElement {
         return html`
           <h2>Nueva Transferencia / Gasto</h2>
           <transferir-form></transferir-form>
+        `;
+      case "admin":
+        return html`
+          <h2>Panel de Administración</h2>
+          <p>Bienvenido, administrador. Aquí puedes gestionar la plataforma.</p>
+          <admin-panel></admin-panel>
         `;
       default:
         return html`<p>Selecciona una opción</p>`;
