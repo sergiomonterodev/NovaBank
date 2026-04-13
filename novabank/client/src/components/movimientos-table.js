@@ -44,8 +44,13 @@ export class MovimientosTable extends LitElement {
     }
   `;
 
+  static properties = {
+    editingId: { type: Object }
+  };
+
   constructor() {
     super();
+    this.editingId = null;
     this._unsubscribe = store.subscribe(() => {
       this.requestUpdate();
     });
@@ -71,16 +76,32 @@ export class MovimientosTable extends LitElement {
           ${store.movements.map(
             (mov) => html`
               <tr>
-                <td>${mov.concept}</td>
+                <td>
+                  ${this.editingId === mov.id
+                    ? html`<input
+                        type="text"
+                        id="edit-${mov.id}"
+                        .value=${mov.concept}
+                      />`
+                    : mov.concept}
+                </td>
+
                 <td class="${mov.type}">${mov.amount}€</td>
                 <td>${mov.date}</td>
                 <td>
-                  <button
-                    class="btn-edit"
-                    @click=${() => console.log("Editar", mov.id)}
-                  >
-                    Editar
-                  </button>
+                  ${this.editingId === mov.id
+                    ? html`<button
+                        class="btn-edit"
+                        @click=${() => this._save(mov.id)}
+                      >
+                        Guardar
+                      </button>`
+                    : html`<button
+                        class="btn-edit"
+                        @click=${() => (this.editingId = mov.id)}
+                      >
+                        Editar
+                      </button>`}
                   <button
                     class="btn-delete"
                     @click=${() => this._delete(mov.id)}
@@ -94,6 +115,28 @@ export class MovimientosTable extends LitElement {
         </tbody>
       </table>
     `;
+  }
+
+  async _save(id) {
+    try {
+      const selector = `input[id="edit-${id}"]`;
+      const input = this.renderRoot.querySelector(selector);
+
+      if (!input) {
+        throw new Error(`No se encontró el input`);
+      }
+
+      const nuevoConcepto = input.value;
+      const success = await store.updateMovement(id, nuevoConcepto);
+
+      if (success) {
+        this.editingId = null;
+        alert("✅ ¡Movimiento actualizado!");
+      }
+    } catch (error) {
+      console.error("DETALLE:", error);
+      alert("Error al guardar");
+    }
   }
 
   async _delete(id) {
