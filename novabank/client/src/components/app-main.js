@@ -3,12 +3,14 @@ import { store } from "../store.js";
 import "./movimientos-table.js";
 import "./transferir-form.js";
 import "./login-view.js";
+import "./register-view.js"
 import "./resumen-grafico.js";
 import "./admin-panel.js";
 
 export class AppMain extends LitElement {
   static properties = {
     activeTab: { type: String },
+    isRegistering: { type: Boolean },
   };
 
   static styles = css`
@@ -50,8 +52,11 @@ export class AppMain extends LitElement {
 
     // Suscripción al store
     store.subscribe(() => {
-      if (!store.user.isLoggedIn || (this.activeTab === 'admin' && store.user.role !== 'admin')) {
-        this.activeTab = 'resumen';
+      if (
+        !store.user.isLoggedIn ||
+        (this.activeTab === "admin" && store.user.role !== "admin")
+      ) {
+        this.activeTab = "resumen";
       }
       this.requestUpdate();
     });
@@ -62,7 +67,13 @@ export class AppMain extends LitElement {
 
   render() {
     if (!store.user.isLoggedIn) {
-      return html`<login-view></login-view>`;
+      return this.isRegistering
+        ? html`<register-view
+            @go-to-login=${() => (this.isRegistering = false)}
+          ></register-view>`
+        : html`<login-view
+            @go-to-register=${() => (this.isRegistering = true)}
+          ></login-view>`;
     }
 
     return html`
@@ -72,7 +83,7 @@ export class AppMain extends LitElement {
         >
           <h1>NovaBank 🏦</h1>
           <button @click=${() => store.logout()}>
-            Cerrar Sesión (${store.user.role})
+            Cerrar Sesión
           </button>
         </div>
         <nav>

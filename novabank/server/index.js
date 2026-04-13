@@ -19,6 +19,34 @@ const getUsers = () => {
   return JSON.parse(data);
 };
 
+// Endpoint de Register
+app.post('/api/register', (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
+
+        // Validar si el usuario ya existe
+        if (users.find(u => u.email === email)) {
+            return res.status(400).json({ message: "El usuario ya existe" });
+        }
+
+        // Crear el nuevo usuario (rol 'user' por defecto)
+        const newUser = {
+            id: Date.now(),
+            email,
+            password,
+            role: 'user'
+        };
+
+        users.push(newUser);
+        fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+
+        res.status(201).json({ message: "Usuario creado con éxito" });
+    } catch (error) {
+        res.status(500).json({ message: "Error al registrar" });
+    }
+});
+
 // Endpoint de Login
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
