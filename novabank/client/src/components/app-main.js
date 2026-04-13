@@ -3,7 +3,7 @@ import { store } from "../store.js";
 import "./movimientos-table.js";
 import "./transferir-form.js";
 import "./login-view.js";
-import "./register-view.js"
+import "./register-view.js";
 import "./resumen-grafico.js";
 import "./admin-panel.js";
 
@@ -82,9 +82,7 @@ export class AppMain extends LitElement {
           style="display: flex; justify-content: space-between; align-items: center;"
         >
           <h1>NovaBank 🏦</h1>
-          <button @click=${() => store.logout()}>
-            Cerrar Sesión
-          </button>
+          <button @click=${() => store.logout()}>Cerrar Sesión</button>
         </div>
         <nav>
           <button
@@ -153,7 +151,12 @@ export class AppMain extends LitElement {
       case "transferir":
         return html`
           <h2>Nueva Transferencia / Gasto</h2>
-          <transferir-form></transferir-form>
+          <transferir-form
+            @movimiento-creado=${() => {
+              this.activeTab = "resumen";
+              this.requestUpdate();
+            }}
+          ></transferir-form>
         `;
       case "admin":
         return html`

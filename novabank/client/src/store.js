@@ -12,7 +12,7 @@ class BankStore {
       isLoggedIn: !!savedToken,
       token: savedToken,
       role: savedRole,
-      id: savedUserId ? parseInt(savedUserId) : null, // Convertimos a número
+      id: savedUserId ? Number(savedUserId) : null,
     };
 
     // Si ya estaba logueado, pedimos sus datos de inmediato
@@ -49,6 +49,27 @@ class BankStore {
   // Obtener el saldo total (amount)
   getSaldoTotal() {
     return this.movements.reduce((acc, mov) => acc + mov.amount, 0);
+  }
+
+  // Añadir movimiento
+  async addMovement(movimiento) {
+    try {
+      const response = await fetch("http://localhost:3000/api/movements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(movimiento),
+      });
+
+      if (response.ok) {
+        const nuevoMov = await response.json();
+        this.movements = [...this.movements, nuevoMov];
+        this.notify();
+        return true;
+      }
+    } catch (error) {
+      console.error("Error al añadir:", error);
+    }
+    return false;
   }
 
   // Borrar movimiento

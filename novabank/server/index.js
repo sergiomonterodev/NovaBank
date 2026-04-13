@@ -86,6 +86,22 @@ app.get("/api/movements", (req, res) => {
   }
 });
 
+// Endpoint para crear movimientos
+app.post('/api/movements', (req, res) => {
+    const nuevoMovimiento = {
+        id: Date.now(),
+        ...req.body
+    };
+    try {
+        const movements = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
+        movements.push(nuevoMovimiento);
+        fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
+        res.status(201).json(nuevoMovimiento);
+    } catch (e) {
+        res.status(500).send("Error");
+    }
+});
+
 // Endpoint para borrar un movimiento por ID
 app.delete("/api/movements/:id", (req, res) => {
   const { id } = req.params;
@@ -107,6 +123,7 @@ app.delete("/api/movements/:id", (req, res) => {
   }
 });
 
+// Endpoint para editar un movimiento por ID
 app.put("/api/movements/:id", (req, res) => {
   const { id } = req.params;
   const { concept } = req.body; // Solo permitiremos editar el concepto
