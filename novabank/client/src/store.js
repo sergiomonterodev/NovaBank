@@ -12,7 +12,7 @@ class BankStore {
       isLoggedIn: !!savedToken,
       token: savedToken,
       role: savedRole,
-      id: savedUserId ? parseInt(savedUserId) : null, // Convertimos a número
+      id: savedUserId ? Number(savedUserId) : null,
     };
 
     // Si ya estaba logueado, pedimos sus datos de inmediato
