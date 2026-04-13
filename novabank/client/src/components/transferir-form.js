@@ -1,64 +1,99 @@
-import { LitElement, html, css } from 'lit';
-import { store } from '../store.js';
+import { LitElement, html, css } from "lit";
+import { store } from "../store.js";
 
 export class TransferirForm extends LitElement {
   static styles = css`
-    form { display: flex; flex-direction: column; gap: 15px; max-width: 400px; }
-    .field { display: flex; flex-direction: column; gap: 5px; }
-    input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-    button { 
-      padding: 10px; 
-      background-color: #005fb8; 
-      color: white; 
-      border: none; 
-      border-radius: 4px; 
-      cursor: pointer; 
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 400px;
     }
-    button:hover { background-color: #004a8f; }
+    input,
+    select,
+    button {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #005fb8;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    label {
+      font-size: 0.9em;
+      color: #555;
+    }
   `;
 
   render() {
     return html`
       <form @submit=${this._handleSubmit}>
-        <div class="field">
-          <label>Concepto</label>
-          <input name="concept" type="text" placeholder="Ej: Compra Mercadona" required>
-        </div>
-        <div class="field">
-          <label>Cantidad (usa "-" para gastos)</label>
-          <input name="amount" type="number" step="0.01" placeholder="Ej: -20.50" required>
-        </div>
-        <div class="field">
-          <label>Tipo</label>
-          <select name="type">
-            <option value="expense">Gasto</option>
+        <div>
+          <label>Tipo de operación:</label>
+          <select name="type" required>
             <option value="income">Ingreso</option>
+            <option value="expense">Gasto</option>
           </select>
         </div>
-        <button type="submit">Registrar Movimiento</button>
+
+        <input
+          type="text"
+          name="concept"
+          placeholder="Concepto (ej: Compra Mercadona)"
+          required
+        />
+
+        <input
+          type="number"
+          name="amount"
+          step="0.01"
+          placeholder="Cantidad (ej: 50.00)"
+          required
+        />
+
+        <button type="submit">Registrar movimiento</button>
       </form>
     `;
   }
 
-  _handleSubmit(e) {
+  async _handleSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    
+
+    const type = formData.get("type");
+    const concept = formData.get("concept");
+    let amount = parseFloat(formData.get("amount"));
+
+    if (type === "expense" && amount > 0) amount = -amount;
+    if (type === "income" && amount < 0) amount = Math.abs(amount);
+
     const nuevoMovimiento = {
-      id: Date.now(), // ID temporal
-      concept: formData.get('concept'),
-      amount: parseFloat(formData.get('amount')),
-      type: formData.get('type'),
-      date: new Date().toISOString().split('T')[0]
+      userId: store.user.id,
+      concept,
+      amount,
+      type,
+      date: new Date().toISOString().split("T")[0],
     };
 
-    // Actualizamos el Store
-    store.movements = [...store.movements, nuevoMovimiento];
-    store.notify();
+    const success = await store.addMovement(nuevoMovimiento);
 
-    // Limpiamos el formulario y feedback
-    e.target.reset();
-    alert("¡Movimiento registrado con éxito!");
+    if (success) {
+      this.dispatchEvent(
+        new CustomEvent("movimiento-creado", {
+          bubbles: true,
+          composed: true,
+        }),
+      );
+      
+      e.target.reset();
+
+      alert("✅ Movimiento registrado");
+    } else {
+      alert("❌ Error al registrar");
+    }
   }
 }
-customElements.define('transferir-form', TransferirForm);
+customElements.define("transferir-form", TransferirForm);
