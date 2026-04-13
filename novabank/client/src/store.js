@@ -104,6 +104,25 @@ class BankStore {
     return false;
   }
 
+  async register(email, password) {
+    try {
+      const response = await fetch("http://localhost:3000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        return { success: true };
+      } else {
+        const data = await response.json();
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      return { success: false, message: "Error de conexión" };
+    }
+  }
+
   // Método para loguearse
   async login(email, password) {
     try {
