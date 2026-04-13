@@ -54,24 +54,20 @@ class BankStore {
   // Borrar movimiento
   async deleteMovement(id) {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/movements/${id}`,
-        {
-          method: "DELETE",
-        },
-      );
+        const response = await fetch(`http://localhost:3000/api/movements/${id}`, {
+            method: 'DELETE'
+        });
 
-      if (response.ok) {
-        // Si el servidor dice que OK, lo quitamos de nuestra lista local para que la UI se actualice
-        this.movements = this.movements.filter((m) => m.id !== id);
-        this.notify();
-        return true;
-      }
+        if (response.ok) {
+            this.movements = this.movements.filter(m => Number(m.id) !== Number(id));
+            this.notify();
+            return true;
+        }
     } catch (error) {
-      console.error("Error al borrar:", error);
+        console.error("Error al borrar:", error);
     }
     return false;
-  }
+}
 
   // Método para loguearse
   async login(email, password) {
@@ -113,7 +109,7 @@ class BankStore {
   logout() {
     this.user = { isLoggedIn: false, role: null, token: null, id: null };
     this.movements = []; // Limpiamos movimientos
-    this.allUsers = [];  // Limpiamos todos los usuarios
+    this.allUsers = []; // Limpiamos todos los usuarios
     localStorage.clear();
     this.notify();
   }

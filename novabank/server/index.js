@@ -59,23 +59,24 @@ app.get("/api/movements", (req, res) => {
 });
 
 // Endpoint para borrar un movimiento por ID
-app.delete("/api/movements/:id", (req, res) => {
-  const { id } = req.params;
-  try {
-    let movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
+app.delete('/api/movements/:id', (req, res) => {
+    const { id } = req.params;
+    try {
+        let movements = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
+        
+        // Convertimos el id a número con Number() para evitar fallos de tipo
+        const initialLength = movements.length;
+        movements = movements.filter(m => Number(m.id) !== Number(id));
 
-    // Filtramos para quitar el movimiento (ojo: convertimos id a número si es necesario)
-    const nuevosMovimientos = movements.filter((m) => m.id !== parseInt(id));
+        if (movements.length === initialLength) {
+            return res.status(404).json({ message: "No se encontró el ID" });
+        }
 
-    if (movements.length === nuevosMovimientos.length) {
-      return res.status(404).json({ message: "Movimiento no encontrado" });
+        fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
+        res.json({ message: "Borrado ok" });
+    } catch (error) {
+        res.status(500).json({ message: "Error interno" });
     }
-
-    fs.writeFileSync(DATA_PATH, JSON.stringify(nuevosMovimientos, null, 2));
-    res.json({ message: "Movimiento eliminado correctamente" });
-  } catch (error) {
-    res.status(500).json({ message: "Error al borrar los datos" });
-  }
 });
 
 // Endpoint para obtener todos los usuarios (Solo para el panel Admin)
