@@ -33,7 +33,7 @@ app.post("/api/login", (req, res) => {
     res.json({
       token: token,
       role: user.role,
-      userId: user.id
+      userId: user.id,
     });
   } else {
     res.status(401).json({ message: "Credenciales incorrectas" });
@@ -59,36 +59,55 @@ app.get("/api/movements", (req, res) => {
 });
 
 // Endpoint para borrar un movimiento por ID
-app.delete('/api/movements/:id', (req, res) => {
-    const { id } = req.params;
-    try {
-        let movements = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-        
-        // Convertimos el id a número con Number() para evitar fallos de tipo
-        const initialLength = movements.length;
-        movements = movements.filter(m => Number(m.id) !== Number(id));
+app.delete("/api/movements/:id", (req, res) => {
+  const { id } = req.params;
+  try {
+    let movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
 
-        if (movements.length === initialLength) {
-            return res.status(404).json({ message: "No se encontró el ID" });
-        }
+    // Convertimos el id a número con Number() para evitar fallos de tipo
+    const initialLength = movements.length;
+    movements = movements.filter((m) => Number(m.id) !== Number(id));
 
-        fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
-        res.json({ message: "Borrado ok" });
-    } catch (error) {
-        res.status(500).json({ message: "Error interno" });
+    if (movements.length === initialLength) {
+      return res.status(404).json({ message: "No se encontró el ID" });
     }
+
+    fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
+    res.json({ message: "Borrado ok" });
+  } catch (error) {
+    res.status(500).json({ message: "Error interno" });
+  }
+});
+
+app.put("/api/movements/:id", (req, res) => {
+  const { id } = req.params;
+  const { concept } = req.body; // Solo permitiremos editar el concepto
+  try {
+    let movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
+    const index = movements.findIndex((m) => Number(m.id) === Number(id));
+
+    if (index !== -1) {
+      movements[index].concept = concept;
+      fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
+      res.json(movements[index]);
+    } else {
+      res.status(404).json({ message: "No encontrado" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar" });
+  }
 });
 
 // Endpoint para obtener todos los usuarios (Solo para el panel Admin)
-app.get('/api/admin/users', (req, res) => {
-    try {
-        const users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
-        // Devolvemos los usuarios pero sin la contraseña por seguridad
-        const safeUsers = users.map(({ password, ...user }) => user);
-        res.json(safeUsers);
-    } catch (error) {
-        res.status(500).json({ message: "Error al obtener usuarios" });
-    }
+app.get("/api/admin/users", (req, res) => {
+  try {
+    const users = JSON.parse(fs.readFileSync(USERS_PATH, "utf-8"));
+    // Devolvemos los usuarios pero sin la contraseña por seguridad
+    const safeUsers = users.map(({ password, ...user }) => user);
+    res.json(safeUsers);
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener usuarios" });
+  }
 });
 
 // Simulación de Cron Job: Cada 2 minutos (120000 ms)

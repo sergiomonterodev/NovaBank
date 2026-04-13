@@ -54,20 +54,55 @@ class BankStore {
   // Borrar movimiento
   async deleteMovement(id) {
     try {
-        const response = await fetch(`http://localhost:3000/api/movements/${id}`, {
-            method: 'DELETE'
-        });
+      const response = await fetch(
+        `http://localhost:3000/api/movements/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
-        if (response.ok) {
-            this.movements = this.movements.filter(m => Number(m.id) !== Number(id));
-            this.notify();
-            return true;
-        }
+      if (response.ok) {
+        this.movements = this.movements.filter(
+          (m) => Number(m.id) !== Number(id),
+        );
+        this.notify();
+        return true;
+      }
     } catch (error) {
-        console.error("Error al borrar:", error);
+      console.error("Error al borrar:", error);
     }
     return false;
-}
+  }
+
+  async updateMovement(id, newConcept) {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/movements/${id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ concept: newConcept }),
+        },
+      );
+
+      if (response.ok) {
+        // Actualizamos el array local para que la UI se entere
+        const index = this.movements.findIndex(
+          (m) => Number(m.id) === Number(id),
+        );
+        if (index !== -1) {
+          this.movements[index].concept = newConcept;
+          // Importante: Crear una copia del array para disparar la reactividad
+          this.movements = [...this.movements];
+          this.notify();
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error("Error en el store:", error);
+    }
+    return false;
+  }
 
   // Método para loguearse
   async login(email, password) {
