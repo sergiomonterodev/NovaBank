@@ -44,6 +44,18 @@ export class MovimientosTable extends LitElement {
     }
   `;
 
+  constructor() {
+    super();
+    this._unsubscribe = store.subscribe(() => {
+      this.requestUpdate();
+    });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._unsubscribe) this._unsubscribe();
+  }
+
   render() {
     return html`
       <table>
@@ -85,13 +97,14 @@ export class MovimientosTable extends LitElement {
   }
 
   async _delete(id) {
-    if (confirm("¿Seguro que quieres borrar este movimiento?")) {
+    if (!id) {
+      console.error("Error: El movimiento no tiene ID");
+      return;
+    }
+
+    if (confirm("¿Seguro?")) {
       const success = await store.deleteMovement(id);
-      if (success) {
-        console.log("Borrado con éxito de la base de datos");
-      } else {
-        alert("Error al intentar borrar el movimiento");
-      }
+      if (!success) alert("No se pudo borrar en el servidor");
     }
   }
 }
