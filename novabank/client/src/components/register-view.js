@@ -35,21 +35,48 @@ export class RegisterView extends LitElement {
       cursor: pointer;
       text-decoration: underline;
     }
+    .error-msg {
+      color: red;
+      font-size: 0.8em;
+      margin-bottom: 10px;
+      display: block;
+    }
   `;
+
+  static properties = {
+    errorMessage: { type: String }
+  };
+
+  constructor() {
+    super();
+    this.errorMessage = '';
+  }
 
   render() {
     return html`
       <h2>Crear Cuenta</h2>
       <form @submit=${this._handleRegister}>
         <input type="email" name="email" placeholder="Email" required />
+        
         <input
           type="password"
           name="password"
           placeholder="Contraseña"
           required
         />
+        
+        <input
+          type="password"
+          name="confirmPassword"
+          placeholder="Repetir contraseña"
+          required
+        />
+
+        ${this.errorMessage ? html`<span class="error-msg">${this.errorMessage}</span>` : ''}
+
         <button type="submit">Registrarse</button>
       </form>
+      
       <span
         class="link"
         @click=${() => this.dispatchEvent(new CustomEvent("go-to-login"))}
@@ -61,8 +88,16 @@ export class RegisterView extends LitElement {
 
   async _handleRegister(e) {
     e.preventDefault();
+    this.errorMessage = '';
+
     const email = e.target.email.value;
     const password = e.target.password.value;
+    const confirmPassword = e.target.confirmPassword.value;
+
+    if (password !== confirmPassword) {
+      this.errorMessage = "Las contraseñas no coinciden";
+      return;
+    }
 
     const result = await store.register(email, password);
 
@@ -70,7 +105,7 @@ export class RegisterView extends LitElement {
       alert("¡Cuenta creada! Ahora puedes iniciar sesión.");
       this.dispatchEvent(new CustomEvent("go-to-login"));
     } else {
-      alert("Error: " + result.message);
+      this.errorMessage = result.message;
     }
   }
 }
