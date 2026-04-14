@@ -69,15 +69,22 @@ export class MovimientosTable extends LitElement {
             <th>Concepto</th>
             <th>Cantidad</th>
             <th>Fecha</th>
+            ${store.user.role === "admin" ? html`<th>Usuario ID</th>` : ""}
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           ${store.movements.map(
-            (mov) => html`
+            (mov) => {
+              // Determinar si el usuario actual puede editar/borrar este movimiento
+              const isOwner = mov.userId === store.user.id;
+              const canEdit = store.user.role === "admin" || (store.user.role === "user" && isOwner);
+              const isReader = store.user.role === "reader";
+              
+              return html`
               <tr>
                 <td>
-                  ${this.editingId === mov.id
+                  ${this.editingId === mov.id && canEdit
                     ? html`<input
                         type="text"
                         id="edit-${mov.id}"
@@ -88,29 +95,35 @@ export class MovimientosTable extends LitElement {
 
                 <td class="${mov.type}">${mov.amount}€</td>
                 <td>${mov.date}</td>
+                ${store.user.role === "admin" ? html`<td>${mov.userId}</td>` : ""}
                 <td>
-                  ${this.editingId === mov.id
-                    ? html`<button
-                        class="btn-edit"
-                        @click=${() => this._save(mov.id)}
-                      >
-                        Guardar
-                      </button>`
-                    : html`<button
-                        class="btn-edit"
-                        @click=${() => (this.editingId = mov.id)}
-                      >
-                        Editar
-                      </button>`}
-                  <button
-                    class="btn-delete"
-                    @click=${() => this._delete(mov.id)}
-                  >
-                    Borrar
-                  </button>
+                  ${!isReader ? html`
+                    ${this.editingId === mov.id
+                      ? html`<button
+                          class="btn-edit"
+                          @click=${() => this._save(mov.id)}
+                        >
+                          Guardar
+                        </button>`
+                      : html`<button
+                          class="btn-edit"
+                          @click=${() => (this.editingId = mov.id)}
+                          ?disabled=${!canEdit}
+                        >
+                          Editar
+                        </button>`}
+                    <button
+                      class="btn-delete"
+                      @click=${() => this._delete(mov.id)}
+                      ?disabled=${!canEdit}
+                    >
+                      Borrar
+                    </button>
+                  ` : html`<span style="color: #999;">Solo lectura</span>`}
                 </td>
               </tr>
-            `,
+            `;
+            }
           )}
         </tbody>
       </table>

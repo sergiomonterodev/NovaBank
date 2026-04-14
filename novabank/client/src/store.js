@@ -37,7 +37,7 @@ class BankStore {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/movements?userId=${this.user.id}`,
+        `http://localhost:3000/api/movements?userId=${this.user.id}&userRole=${this.user.role}`,
       );
       this.movements = await response.json();
       this.notify();
@@ -54,10 +54,14 @@ class BankStore {
   // Añadir movimiento
   async addMovement(movimiento) {
     try {
+      const movimientoConRole = {
+        ...movimiento,
+        userRole: this.user.role
+      };
       const response = await fetch("http://localhost:3000/api/movements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(movimiento),
+        body: JSON.stringify(movimientoConRole),
       });
 
       if (response.ok) {
@@ -65,6 +69,9 @@ class BankStore {
         this.movements = [...this.movements, nuevoMov];
         this.notify();
         return true;
+      } else {
+        const error = await response.json();
+        console.error("Error:", error.message);
       }
     } catch (error) {
       console.error("Error al añadir:", error);
@@ -76,7 +83,7 @@ class BankStore {
   async deleteMovement(id) {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/movements/${id}`,
+        `http://localhost:3000/api/movements/${id}?userRole=${this.user.role}&userId=${this.user.id}`,
         {
           method: "DELETE",
         },
@@ -88,6 +95,9 @@ class BankStore {
         );
         this.notify();
         return true;
+      } else {
+        const error = await response.json();
+        console.error("Error:", error.message);
       }
     } catch (error) {
       console.error("Error al borrar:", error);
@@ -102,7 +112,11 @@ class BankStore {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ concept: newConcept }),
+          body: JSON.stringify({ 
+            concept: newConcept,
+            userRole: this.user.role,
+            userId: this.user.id
+          }),
         },
       );
 
@@ -118,6 +132,9 @@ class BankStore {
           this.notify();
           return true;
         }
+      } else {
+        const error = await response.json();
+        console.error("Error:", error.message);
       }
     } catch (error) {
       console.error("Error en el store:", error);
@@ -199,6 +216,37 @@ class BankStore {
       this.notify();
     } catch (error) {
       console.error("Error cargando usuarios:", error);
+    }
+  }
+
+  // Método para cambiar el rol de un usuario
+  async changeUserRole(userId, newRole) {
+    if (this.user.role !== "admin") return { success: false, message: "No tienes permisos" };
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/admin/users/${userId}/role`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Actualizamos el usuario en la lista local
+        const index = this.allUsers.findIndex((u) => Number(u.id) === Number(userId));
+        if (index !== -1) {
+          this.allUsers[index] = data.user;
+          this.allUsers = [...this.allUsers];
+          this.notify();
+        }
+        return { success: true, message: "Rol actualizado" };
+      } else {
+        const data = await response.json();
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error("Error al cambiar rol:", error);
+      return { success: false, message: "Error de conexión" };
     }
   }
 }
