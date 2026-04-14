@@ -1,5 +1,6 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html } from "lit";
 import { store } from "../store.js";
+import { appMainStyles } from "../styles/app-main.styles.js";
 import "./movimientos-table.js";
 import "./transferir-form.js";
 import "./login-view.js";
@@ -14,38 +15,7 @@ export class AppMain extends LitElement {
     isRegistering: { type: Boolean },
   };
 
-  static styles = css`
-    :host {
-      display: block;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    nav {
-      display: flex;
-      gap: 10px;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      cursor: pointer;
-      border: none;
-      background: #f0f0f0;
-      border-radius: 5px;
-    }
-    button[active] {
-      background: #005fb8;
-      color: white;
-    }
-    .content {
-      padding: 20px;
-      border: 1px solid #eee;
-      border-radius: 8px;
-    }
-  `;
+  static styles = appMainStyles;
 
   constructor() {
     super();
