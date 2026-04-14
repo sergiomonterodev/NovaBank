@@ -16,17 +16,5 @@
     "email": "reader@nova.com",
     "password": "reader",
     "role": "reader"
-  },
-  {
-    "id": 1776163000564,
-    "email": "emprendedor@gmail.com",
-    "password": "emprendedor",
-    "role": "user"
-  },
-  {
-    "id": 1776163188150,
-    "email": "inversor@gmail.com",
-    "password": "inversor",
-    "role": "user"
   }
 ]
