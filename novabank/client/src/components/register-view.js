@@ -44,7 +44,7 @@ export class RegisterView extends LitElement {
   render() {
     return html`
       <h2>Crear Cuenta</h2>
-      <form @submit=${this._handleRegister}>
+      <form @submit=${(e) => this._handleRegister(e)}>
         <input type="email" name="email" placeholder="Email" required />
         
         <input
@@ -76,9 +76,20 @@ export class RegisterView extends LitElement {
   async _handleRegister(e) {
     e.preventDefault();
 
-    const email = e.target.email.value;
-    const password = e.target.password.value;
-    const confirmPassword = e.target.confirmPassword.value;
+    const email = this.renderRoot.querySelector('input[name="email"]').value;
+    const password = this.renderRoot.querySelector('input[name="password"]').value;
+    const confirmPassword = this.renderRoot.querySelector('input[name="confirmPassword"]').value;
+
+    // Validaciones de contraseña
+    if (!password) {
+      store.addNotification("La contraseña no puede estar vacía", "warning");
+      return;
+    }
+
+    if (password.length < 6) {
+      store.addNotification("La contraseña debe tener al menos 6 caracteres", "warning");
+      return;
+    }
 
     if (password !== confirmPassword) {
       store.addNotification("Las contraseñas no coinciden", "warning");

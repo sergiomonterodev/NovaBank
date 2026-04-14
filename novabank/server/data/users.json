@@ -22,5 +22,11 @@
     "email": "emprendedor@gmail.com",
     "password": "emprendedor",
     "role": "user"
+  },
+  {
+    "id": 1776163188150,
+    "email": "inversor@gmail.com",
+    "password": "inversor",
+    "role": "user"
   }
 ]

@@ -68,13 +68,16 @@ export class AppMain extends LitElement {
 
   render() {
     if (!store.user.isLoggedIn) {
-      return this.isRegistering
-        ? html`<register-view
-            @go-to-login=${() => (this.isRegistering = false)}
-          ></register-view>`
-        : html`<login-view
-            @go-to-register=${() => (this.isRegistering = true)}
-          ></login-view>`;
+      return html`
+        <notification-system></notification-system>
+        ${this.isRegistering
+          ? html`<register-view
+              @go-to-login=${() => (this.isRegistering = false)}
+            ></register-view>`
+          : html`<login-view
+              @go-to-register=${() => (this.isRegistering = true)}
+            ></login-view>`}
+      `;
     }
 
     return html`
