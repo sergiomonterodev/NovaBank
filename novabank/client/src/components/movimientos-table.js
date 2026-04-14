@@ -42,15 +42,58 @@ export class MovimientosTable extends LitElement {
       border: none;
       border-radius: 3px;
     }
+    .modal-overlay {
+      display: flex;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+    .btn-confirm {
+      background: #dc3545;
+      color: white;
+      padding: 8px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-cancel {
+      background: #6c757d;
+      color: white;
+      padding: 8px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
   `;
 
   static properties = {
-    editingId: { type: Object }
+    editingId: { type: Object },
+    deletingId: { type: Object }
   };
 
   constructor() {
     super();
     this.editingId = null;
+    this.deletingId = null;
     this._unsubscribe = store.subscribe(() => {
       this.requestUpdate();
     });
@@ -63,6 +106,19 @@ export class MovimientosTable extends LitElement {
 
   render() {
     return html`
+      ${this.deletingId ? html`
+        <div class="modal-overlay" @click=${() => this.deletingId = null}>
+          <div class="modal" @click=${(e) => e.stopPropagation()}>
+            <h3>¿Eliminar movimiento?</h3>
+            <p>Esta acción no se puede deshacer.</p>
+            <div class="modal-buttons">
+              <button class="btn-confirm" @click=${() => this._confirmDelete(this.deletingId)}>Eliminar</button>
+              <button class="btn-cancel" @click=${() => this.deletingId = null}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      ` : ""}
+
       <table>
         <thead>
           <tr>
@@ -144,23 +200,34 @@ export class MovimientosTable extends LitElement {
 
       if (success) {
         this.editingId = null;
-        alert("✅ ¡Movimiento actualizado!");
+        store.addNotification("Movimiento actualizado correctamente", "success");
+      } else {
+        store.addNotification("No se pudo actualizar el movimiento", "error");
       }
     } catch (error) {
       console.error("DETALLE:", error);
-      alert("Error al guardar");
+      store.addNotification("Error al guardar el movimiento", "error");
     }
   }
 
   async _delete(id) {
     if (!id) {
       console.error("Error: El movimiento no tiene ID");
+      store.addNotification("Error: ID de movimiento no válido", "error");
       return;
     }
 
-    if (confirm("¿Seguro?")) {
-      const success = await store.deleteMovement(id);
-      if (!success) alert("No se pudo borrar en el servidor");
+    this.deletingId = id;
+  }
+
+  async _confirmDelete(id) {
+    const success = await store.deleteMovement(id);
+    this.deletingId = null;
+    
+    if (success) {
+      store.addNotification("Movimiento eliminado correctamente", "success");
+    } else {
+      store.addNotification("No se pudo eliminar el movimiento", "error");
     }
   }
 }

@@ -16,5 +16,11 @@
     "email": "reader@nova.com",
     "password": "reader",
     "role": "reader"
+  },
+  {
+    "id": 1776163000564,
+    "email": "emprendedor@gmail.com",
+    "password": "emprendedor",
+    "role": "user"
   }
 ]

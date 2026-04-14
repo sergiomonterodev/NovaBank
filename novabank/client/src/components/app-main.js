@@ -6,6 +6,7 @@ import "./login-view.js";
 import "./register-view.js";
 import "./resumen-grafico.js";
 import "./admin-panel.js";
+import "./notification-system.js";
 
 export class AppMain extends LitElement {
   static properties = {
@@ -77,6 +78,7 @@ export class AppMain extends LitElement {
     }
 
     return html`
+      <notification-system></notification-system>
       <header>
         <div
           style="display: flex; justify-content: space-between; align-items: center;"

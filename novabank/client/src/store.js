@@ -3,6 +3,8 @@ class BankStore {
     this.movements = [];
     this.subscribers = [];
     this.allUsers = [];
+    this.notifications = [];
+    this.notificationId = 0;
 
     const savedRole = localStorage.getItem("role");
     const savedToken = localStorage.getItem("token");
@@ -248,6 +250,32 @@ class BankStore {
       console.error("Error al cambiar rol:", error);
       return { success: false, message: "Error de conexión" };
     }
+  }
+
+  // Métodos para notificaciones
+  addNotification(message, type = "info", duration = 4000) {
+    const id = this.notificationId++;
+    const notification = { id, message, type };
+    
+    this.notifications = [...this.notifications, notification];
+    this.notify();
+    
+    // Auto-remover después del duration especificado
+    if (duration > 0) {
+      setTimeout(() => this.removeNotification(id), duration);
+    }
+    
+    return id;
+  }
+
+  removeNotification(id) {
+    this.notifications = this.notifications.filter(n => n.id !== id);
+    this.notify();
+  }
+
+  clearNotifications() {
+    this.notifications = [];
+    this.notify();
   }
 }
 

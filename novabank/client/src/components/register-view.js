@@ -35,21 +35,10 @@ export class RegisterView extends LitElement {
       cursor: pointer;
       text-decoration: underline;
     }
-    .error-msg {
-      color: red;
-      font-size: 0.8em;
-      margin-bottom: 10px;
-      display: block;
-    }
   `;
-
-  static properties = {
-    errorMessage: { type: String }
-  };
 
   constructor() {
     super();
-    this.errorMessage = '';
   }
 
   render() {
@@ -72,8 +61,6 @@ export class RegisterView extends LitElement {
           required
         />
 
-        ${this.errorMessage ? html`<span class="error-msg">${this.errorMessage}</span>` : ''}
-
         <button type="submit">Registrarse</button>
       </form>
       
@@ -88,24 +75,25 @@ export class RegisterView extends LitElement {
 
   async _handleRegister(e) {
     e.preventDefault();
-    this.errorMessage = '';
 
     const email = e.target.email.value;
     const password = e.target.password.value;
     const confirmPassword = e.target.confirmPassword.value;
 
     if (password !== confirmPassword) {
-      this.errorMessage = "Las contraseñas no coinciden";
+      store.addNotification("Las contraseñas no coinciden", "warning");
       return;
     }
 
     const result = await store.register(email, password);
 
     if (result.success) {
-      alert("¡Cuenta creada! Ahora puedes iniciar sesión.");
-      this.dispatchEvent(new CustomEvent("go-to-login"));
+      store.addNotification("¡Cuenta creada! Ahora puedes iniciar sesión.", "success");
+      setTimeout(() => {
+        this.dispatchEvent(new CustomEvent("go-to-login"));
+      }, 1500);
     } else {
-      this.errorMessage = result.message;
+      store.addNotification(result.message, "error");
     }
   }
 }

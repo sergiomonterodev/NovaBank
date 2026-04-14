@@ -68,11 +68,11 @@ export class AdminPanel extends LitElement {
 
     const result = await store.changeUserRole(userId, newRole);
     if (result.success) {
-      alert(`Rol actualizado a ${newRole}`);
+      store.addNotification(`Rol actualizado a ${newRole}`, 'success');
       delete this.selectedRoles[userId];
       this.requestUpdate();
     } else {
-      alert(`Error: ${result.message}`);
+      store.addNotification(`Error: ${result.message}`, 'error');
     }
   }
 
