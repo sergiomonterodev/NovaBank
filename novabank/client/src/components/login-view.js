@@ -91,7 +91,9 @@ export class LoginView extends LitElement {
     const success = await store.login(email, password);
     
     if (!success) {
-      alert('Credenciales incorrectas o error de conexión');
+      store.addNotification('Credenciales incorrectas o error de conexión', 'error');
+    } else {
+      store.addNotification('Sesión iniciada correctamente', 'success');
     }
     // Si tiene éxito, el Store notificará y app-main cambiará la vista solo
   }

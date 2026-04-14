@@ -14,5 +14,37 @@
     "amount": -50,
     "type": "expense",
     "date": "2024-03-02"
+  },
+  {
+    "id": 1776163139337.412,
+    "userId": 1,
+    "concept": "Intereses ganados (Individual)",
+    "amount": 0.5,
+    "type": "income",
+    "date": "2026-04-14"
+  },
+  {
+    "id": 1776163139337.8672,
+    "userId": 2,
+    "concept": "Intereses ganados (Individual)",
+    "amount": 0.5,
+    "type": "income",
+    "date": "2026-04-14"
+  },
+  {
+    "id": 1776163139337.687,
+    "userId": 3,
+    "concept": "Intereses ganados (Individual)",
+    "amount": 0.5,
+    "type": "income",
+    "date": "2026-04-14"
+  },
+  {
+    "id": 1776163139337.9553,
+    "userId": 1776163000564,
+    "concept": "Intereses ganados (Individual)",
+    "amount": 0.5,
+    "type": "income",
+    "date": "2026-04-14"
   }
 ]

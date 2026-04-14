@@ -89,10 +89,9 @@ export class TransferirForm extends LitElement {
       );
       
       e.target.reset();
-
-      alert("✅ Movimiento registrado");
+      store.addNotification("Movimiento registrado correctamente", "success");
     } else {
-      alert("❌ Error al registrar");
+      store.addNotification("No se pudo registrar el movimiento. Verifica que tengas permiso.", "error");
     }
   }
 }

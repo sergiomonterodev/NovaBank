@@ -6,6 +6,7 @@ import "./login-view.js";
 import "./register-view.js";
 import "./resumen-grafico.js";
 import "./admin-panel.js";
+import "./notification-system.js";
 
 export class AppMain extends LitElement {
   static properties = {
@@ -67,16 +68,20 @@ export class AppMain extends LitElement {
 
   render() {
     if (!store.user.isLoggedIn) {
-      return this.isRegistering
-        ? html`<register-view
-            @go-to-login=${() => (this.isRegistering = false)}
-          ></register-view>`
-        : html`<login-view
-            @go-to-register=${() => (this.isRegistering = true)}
-          ></login-view>`;
+      return html`
+        <notification-system></notification-system>
+        ${this.isRegistering
+          ? html`<register-view
+              @go-to-login=${() => (this.isRegistering = false)}
+            ></register-view>`
+          : html`<login-view
+              @go-to-register=${() => (this.isRegistering = true)}
+            ></login-view>`}
+      `;
     }
 
     return html`
+      <notification-system></notification-system>
       <header>
         <div
           style="display: flex; justify-content: space-between; align-items: center;"
