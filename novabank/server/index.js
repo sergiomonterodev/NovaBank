@@ -223,20 +223,38 @@ app.put("/api/admin/users/:id/role", (req, res) => {
   }
 });
 
+// Función para obtener una transacción aleatoria del pool
+const getRandomTransaction = () => {
+  try {
+    const transactionsPool = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "data", "transactions-pool.json"), "utf-8")
+    );
+    const randomTransaction = transactionsPool.transactions[
+      Math.floor(Math.random() * transactionsPool.transactions.length)
+    ];
+    return randomTransaction;
+  } catch (e) {
+    console.log("Error al leer transactions-pool.json:", e);
+    return { concept: "Movimiento automático", amount: 0.5 };
+  }
+};
+
 // Simulación de Cron Job: Cada 2 minutos (120000 ms)
 setInterval(() => {
   try {
     const movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
     const users = JSON.parse(fs.readFileSync(USERS_PATH, "utf-8"));
 
-    // Creamos un interés para CADA usuario registrado
+    // Creamos un movimiento para CADA usuario registrado
     users.forEach((user) => {
+      const transaction = getRandomTransaction();
+      
       movements.push({
         id: Date.now() + Math.random(),
-        userId: user.id, // <--- Relacionamos con el usuario
-        concept: "Intereses ganados (Individual)",
-        amount: 0.5,
-        type: "income",
+        userId: user.id,
+        concept: transaction.concept,
+        amount: transaction.amount,
+        type: transaction.amount >= 0 ? "income" : "expense",
         date: new Date().toISOString().split("T")[0],
       });
     });
