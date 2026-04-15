@@ -6,7 +6,8 @@ export class AdminPanel extends LitElement {
   static styles = adminPanelStyles;
 
   static properties = {
-    expandedUserId: { type: Number },
+    selectedUserId: { type: Number },
+    showMovementsModal: { type: Boolean },
     userMovements: { type: Object },
     editingMovementId: { type: Number },
     deletingMovementId: { type: Number },
@@ -15,7 +16,8 @@ export class AdminPanel extends LitElement {
   constructor() {
     super();
     this.selectedRoles = {};
-    this.expandedUserId = null;
+    this.selectedUserId = null;
+    this.showMovementsModal = false;
     this.userMovements = {};
     this.editingMovementId = null;
     this.deletingMovementId = null;
@@ -65,14 +67,16 @@ export class AdminPanel extends LitElement {
   }
 
   async toggleUserMovements(userId) {
-    if (this.expandedUserId === userId) {
-      // Si ya está expandido, cerrarlo
-      this.expandedUserId = null;
+    if (this.showMovementsModal && this.selectedUserId === userId) {
+      // Si ya está abierto, cerrarlo
+      this.showMovementsModal = false;
+      this.selectedUserId = null;
       this.editingMovementId = null;
       this.deletingMovementId = null;
     } else {
-      // Cargar movimientos del usuario
-      this.expandedUserId = userId;
+      // Cargar movimientos del usuario y abrir modal
+      this.selectedUserId = userId;
+      this.showMovementsModal = true;
       this.editingMovementId = null;
       this.deletingMovementId = null;
       try {
@@ -120,7 +124,7 @@ export class AdminPanel extends LitElement {
         store.addNotification("Movimiento actualizado", "success");
         this.editingMovementId = null;
         // Recargar movimientos del usuario
-        const userId = this.expandedUserId;
+        const userId = this.selectedUserId;
         const movResponse = await fetch(
           `http://localhost:3000/api/movements?userId=${userId}&userRole=admin`,
         );
@@ -155,7 +159,7 @@ export class AdminPanel extends LitElement {
         store.addNotification("Movimiento eliminado", "success");
         this.deletingMovementId = null;
         // Recargar movimientos del usuario
-        const userId = this.expandedUserId;
+        const userId = this.selectedUserId;
         const movResponse = await fetch(
           `http://localhost:3000/api/movements?userId=${userId}&userRole=admin`,
         );
@@ -175,8 +179,10 @@ export class AdminPanel extends LitElement {
   }
 
   render() {
+    const selectedUser = this.selectedUserId ? store.allUsers.find(u => u.id === this.selectedUserId) : null;
+    
     return html`
-      <table>>
+      <table>
         <thead>
           <tr>
             <th>ID</th>
@@ -207,67 +213,67 @@ export class AdminPanel extends LitElement {
                 ` : html``}
               </td>
               <td>
-                <button @click="${() => this.toggleUserMovements(u.id)}">
-                  ${this.expandedUserId === u.id ? "Ocultar Movimientos" : "Ver Movimientos"}
-                </button>
+                <button @click="${() => this.toggleUserMovements(u.id)}">Ver Movimientos</button>
               </td>
             </tr>
-            ${this.expandedUserId === u.id && this.userMovements[u.id] ? html`
-              <tr>
-                <td colspan="5">
-                  <h4 style="margin: 10px 0;">Movimientos de ${u.email}</h4>
-                  <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                      <tr style="background-color: #f0f0f0;">
-                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Concepto</th>
-                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Cantidad</th>
-                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Tipo</th>
-                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Fecha</th>
-                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${this.userMovements[u.id].map(m => html`
-                        <tr style="border: 1px solid #ddd;">
-                          <td style="padding: 8px; border: 1px solid #ddd;">
-                            ${this.editingMovementId === m.id
-                              ? html`<input type="text" data-movement="${m.id}" .value="${m.concept}" />`
-                              : m.concept}
-                          </td>
-                          <td style="padding: 8px; border: 1px solid #ddd; color: ${m.amount >= 0 ? 'green' : 'red'};">
-                            ${m.amount >= 0 ? '+' : ''}${m.amount.toFixed(2)}€
-                          </td>
-                          <td style="padding: 8px; border: 1px solid #ddd;">${m.type}</td>
-                          <td style="padding: 8px; border: 1px solid #ddd;">${this._formatDate(m.date)}</td>
-                          <td style="padding: 8px; border: 1px solid #ddd;">
-                            ${this.editingMovementId === m.id
-                              ? html`<button style="background-color: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;" @click="${() => this._saveEditMovement(m.id)}">Guardar</button>`
-                              : html`<button style="background-color: #007bff; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;" @click="${() => this._startEdit(m.id)}">Editar</button>`}
-                            <button style="background-color: #dc3545; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;" @click="${() => this._startDelete(m.id)}">Borrar</button>
-                          </td>
-                        </tr>
-                      `)}
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-              ${this.deletingMovementId ? html`
-                <tr>
-                  <td colspan="5">
-                    <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                      <p>¿Está seguro de que desea eliminar este movimiento?</p>
-                      <button style="background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;" 
-                        @click="${() => this._confirmDelete(this.deletingMovementId)}">Eliminar</button>
-                      <button style="background-color: #6c757d; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;" 
-                        @click="${() => (this.deletingMovementId = null, this.requestUpdate())}">Cancelar</button>
-                    </div>
-                  </td>
-                </tr>
-              ` : ""}
-            ` : ""}
           `)}
         </tbody>
       </table>
+
+      ${this.showMovementsModal && selectedUser && this.userMovements[this.selectedUserId] ? html`
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+          <div style="background-color: white; border-radius: 8px; padding: 25px; max-width: 900px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3 style="margin: 0;">Movimientos de ${selectedUser.email}</h3>
+              <button style="background-color: #6c757d; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;" @click="${() => (this.showMovementsModal = false, this.selectedUserId = null, this.requestUpdate())}">✕</button>
+            </div>
+            
+            ${this.deletingMovementId ? html`
+              <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <p>¿Está seguro de que desea eliminar este movimiento?</p>
+                <button style="background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;" 
+                  @click="${() => this._confirmDelete(this.deletingMovementId)}">Eliminar</button>
+                <button style="background-color: #6c757d; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;" 
+                  @click="${() => (this.deletingMovementId = null, this.requestUpdate())}">Cancelar</button>
+              </div>
+            ` : ""}
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background-color: #f0f0f0;">
+                  <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Concepto</th>
+                  <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Cantidad</th>
+                  <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Tipo</th>
+                  <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Fecha</th>
+                  <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.userMovements[this.selectedUserId].map(m => html`
+                  <tr style="border: 1px solid #ddd;">
+                    <td style="padding: 12px; border: 1px solid #ddd;">
+                      ${this.editingMovementId === m.id
+                        ? html`<input type="text" data-movement="${m.id}" .value="${m.concept}" />`
+                        : m.concept}
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #ddd; color: ${m.amount >= 0 ? 'green' : 'red'}; font-weight: bold;">
+                      ${m.amount >= 0 ? '+' : ''}${m.amount.toFixed(2)}€
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${m.type}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${this._formatDate(m.date)}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">
+                      ${this.editingMovementId === m.id
+                        ? html`<button style="background-color: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;" @click="${() => this._saveEditMovement(m.id)}">Guardar</button>`
+                        : html`<button style="background-color: #007bff; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;" @click="${() => this._startEdit(m.id)}">Editar</button>`}
+                      <button style="background-color: #dc3545; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;" @click="${() => this._startDelete(m.id)}">Borrar</button>
+                    </td>
+                  </tr>
+                `)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : ""}
     `;
   }
 }
