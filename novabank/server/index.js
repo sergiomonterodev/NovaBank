@@ -205,7 +205,7 @@ app.post("/api/movements", async (req, res) => {
     // Instert movimiento para el usuario destino (como income)
     await connection.query(
       "INSERT INTO movements (userId, concept, amount, type, date, target_account_number) VALUES (?, ?, ?, ?, ?, ?)",
-      [targetUser[0].id, `Transferencia de ${sourceUser[0].id}`, Math.abs(amount), "income", date, targetAccountNumber]
+      [targetUser[0].id, concept, Math.abs(amount), "income", date, targetAccountNumber]
     );
 
     const [newMovement] = await connection.query(
