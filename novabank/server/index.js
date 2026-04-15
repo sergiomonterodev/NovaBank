@@ -100,16 +100,10 @@ app.get("/api/movements", async (req, res) => {
     let query;
     let params;
 
-    if (userRole === "admin") {
-      // Los admins ven todos los movimientos
-      query = "SELECT * FROM movements ORDER BY date DESC, id DESC";
-      params = [];
-    } else {
-      // Los usuarios normales y lectores solo ven sus propios movimientos
-      query =
-        "SELECT * FROM movements WHERE userId = ? ORDER BY date DESC, id DESC";
-      params = [userId];
-    }
+    // Todos ven solo sus propios movimientos (incluyendo admins)
+    query =
+      "SELECT * FROM movements WHERE userId = ? ORDER BY date DESC, id DESC";
+    params = [userId];
 
     const [movements] = await connection.query(query, params);
     connection.release();

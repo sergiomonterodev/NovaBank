@@ -20,25 +20,17 @@ export class AppMain extends LitElement {
 
   constructor() {
     super();
-    // Si es admin, comenzar en movimientos, si no en resumen
-    this.activeTab = store.user.role === "admin" ? "movimientos" : "resumen";
+    // Si es admin, comenzar en admin, si no en resumen
+    this.activeTab = store.user.role === "admin" ? "admin" : "resumen";
     this.balance = store.user.balance;
 
     // Suscripción al store
     store.subscribe(() => {
       // Actualizar el balance reactivo
       this.balance = store.user.balance;
-      
+
       // Si no está logueado, ir a login
       if (!store.user.isLoggedIn) {
-        this.activeTab = "resumen";
-      } 
-      // Si es admin y está en resumen, cambiar a movimientos
-      else if (store.user.role === "admin" && this.activeTab === "resumen") {
-        this.activeTab = "movimientos";
-      }
-      // Si no es admin pero está en admin, cambiar a resumen
-      else if (store.user.role !== "admin" && this.activeTab === "admin") {
         this.activeTab = "resumen";
       }
       this.requestUpdate();
@@ -72,19 +64,24 @@ export class AppMain extends LitElement {
           <button @click=${() => store.logout()}>Cerrar Sesión</button>
         </div>
         <nav>
-          ${store.user.role !== "admin"
+          ${store.user.role === "admin"
             ? html`<button
+                ?active=${this.activeTab === "admin"}
+                @click=${() => (this.activeTab = "admin")}
+              >
+                Mi Resumen
+              </button>`
+            : html`<button
                 ?active=${this.activeTab === "resumen"}
                 @click=${() => (this.activeTab = "resumen")}
               >
                 Resumen
-              </button>`
-            : ""}
+              </button>`}
           <button
             ?active=${this.activeTab === "movimientos"}
             @click=${() => (this.activeTab = "movimientos")}
           >
-            Movimientos
+            Mis Movimientos
           </button>
           <button
             ?active=${this.activeTab === "transferir"}
@@ -92,13 +89,12 @@ export class AppMain extends LitElement {
           >
             Transferencias
           </button>
-
           ${store.user.role === "admin"
             ? html`<button
-                ?active=${this.activeTab === "admin"}
-                @click=${() => (this.activeTab = "admin")}
+                ?active=${this.activeTab === "gestion"}
+                @click=${() => (this.activeTab = "gestion")}
               >
-                Admin
+                Gestión de Usuarios
               </button>`
             : ""}
         </nav>
@@ -111,8 +107,11 @@ export class AppMain extends LitElement {
   _renderTab() {
     switch (this.activeTab) {
       case "resumen":
+      case "admin":
         return html`
-          <h2>Estado de cuenta</h2>
+          <h2>
+            ${this.activeTab === "admin" ? "Mi Resumen" : "Estado de cuenta"}
+          </h2>
           <div style="text-align: center;">
             <p>
               Saldo Total:
@@ -147,10 +146,9 @@ export class AppMain extends LitElement {
             }}
           ></transferir-form>
         `;
-      case "admin":
+      case "gestion":
         return html`
-          <h2>Panel de Administración</h2>
-          <p>Bienvenido, administrador. Aquí puedes gestionar la plataforma.</p>
+          <h2>Gestión de Usuarios</h2>
           <admin-panel></admin-panel>
         `;
       default:

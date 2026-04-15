@@ -45,7 +45,6 @@ export class AdminPanel extends LitElement {
 
   render() {
     return html`
-      <h3>Gestión de Usuarios</h3>
       <table>
         <thead>
           <tr>
