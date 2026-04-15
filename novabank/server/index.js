@@ -121,9 +121,34 @@ app.get("/api/movements", async (req, res) => {
   }
 });
 
-// Endpoint para crear movimientos
+// Endpoint para obtener datos del usuario (incluyendo balance y account_number)
+app.get("/api/user/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const connection = await pool.getConnection();
+
+    const [users] = await connection.query(
+      "SELECT id, email, role, account_number, balance FROM users WHERE id = ?",
+      [id]
+    );
+
+    connection.release();
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.json(users[0]);
+  } catch (error) {
+    console.error("Error al obtener usuario:", error);
+    res.status(500).json({ message: "Error al obtener datos del usuario" });
+  }
+});
+
+// Endpoint para crear movimientos (transferencias)
 app.post("/api/movements", async (req, res) => {
-  const { userId, concept, amount, type, date, userRole } = req.body;
+  const { userId, concept, amount, date, userRole, targetAccountNumber } = req.body;
 
   // Los lectores no pueden crear movimientos
   if (userRole === "reader") {
@@ -135,9 +160,58 @@ app.post("/api/movements", async (req, res) => {
   try {
     const connection = await pool.getConnection();
 
+    // Obtener datos del usuario origen (para validar saldo)
+    const [sourceUser] = await connection.query(
+      "SELECT id, balance FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (sourceUser.length === 0) {
+      connection.release();
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    // Validar que a cantidad es menor al balance
+    if (amount > sourceUser[0].balance) {
+      connection.release();
+      return res.status(400).json({ 
+        message: `No tienes suficiente saldo. Saldo disponible: ${sourceUser[0].balance}€` 
+      });
+    }
+
+    // Buscar usuario destino por account_number
+    const [targetUser] = await connection.query(
+      "SELECT id FROM users WHERE account_number = ?",
+      [targetAccountNumber]
+    );
+
+    if (targetUser.length === 0) {
+      connection.release();
+      return res.status(404).json({ message: "Cuenta destino no encontrada" });
+    }
+
+    // Insertar el movimiento (siempre como "expense" para el usuario origen)
     await connection.query(
-      "INSERT INTO movements (userId, concept, amount, type, date) VALUES (?, ?, ?, ?, ?)",
-      [userId, concept, amount, type, date]
+      "INSERT INTO movements (userId, concept, amount, type, date, target_account_number) VALUES (?, ?, ?, ?, ?, ?)",
+      [userId, concept, -Math.abs(amount), "expense", date, targetAccountNumber]
+    );
+
+    // Actualizar saldo del usuario origen (restar)
+    await connection.query(
+      "UPDATE users SET balance = balance - ? WHERE id = ?",
+      [amount, userId]
+    );
+
+    // Actualizar saldo del usuario destino (sumar)
+    await connection.query(
+      "UPDATE users SET balance = balance + ? WHERE id = ?",
+      [amount, targetUser[0].id]
+    );
+
+    // Instert movimiento para el usuario destino (como income)
+    await connection.query(
+      "INSERT INTO movements (userId, concept, amount, type, date, target_account_number) VALUES (?, ?, ?, ?, ?, ?)",
+      [targetUser[0].id, `Transferencia de ${sourceUser[0].id}`, Math.abs(amount), "income", date, targetAccountNumber]
     );
 
     const [newMovement] = await connection.query(

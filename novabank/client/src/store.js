@@ -15,11 +15,14 @@ class BankStore {
       token: savedToken,
       role: savedRole,
       id: savedUserId ? Number(savedUserId) : null,
+      balance: 0,
+      accountNumber: null,
     };
 
     // Si ya estaba logueado, pedimos sus datos de inmediato
     if (this.user.isLoggedIn) {
       this.fetchMovements();
+      this.fetchCurrentUser();
     }
   }
 
@@ -53,12 +56,29 @@ class BankStore {
     }
   }
 
+  // Obtener datos del usuario actual (balance y account_number)
+  async fetchCurrentUser() {
+    if (!this.user.id) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/user/${this.user.id}`,
+      );
+      const userData = await response.json();
+      this.user.balance = Number(userData.balance);
+      this.user.accountNumber = userData.account_number;
+      this.notify();
+    } catch (error) {
+      console.error("Error al obtener datos del usuario:", error);
+    }
+  }
+
   // Obtener el saldo total (amount)
   getSaldoTotal() {
     return this.movements.reduce((acc, mov) => acc + Number(mov.amount), 0);
   }
 
-  // Añadir movimiento
+  // Añadir movimiento (transferencia)
   async addMovement(movimiento) {
     try {
       const movimientoConRole = {
@@ -74,11 +94,16 @@ class BankStore {
       if (response.ok) {
         const nuevoMov = await response.json();
         this.movements = [...this.movements, nuevoMov];
+        // Refrescar balance después de transferencia
+        await this.fetchCurrentUser();
+        // Refrescar movimientos para obtener los datos más recientes
+        await this.fetchMovements();
         this.notify();
         return true;
       } else {
         const error = await response.json();
         console.error("Error:", error.message);
+        throw new Error(error.message);
       }
     } catch (error) {
       console.error("Error al añadir:", error);
@@ -185,6 +210,8 @@ class BankStore {
           role: data.role,
           token: data.token,
           id: data.userId,
+          balance: 0,
+          accountNumber: null,
         };
 
         // Guardamos en persistencia
@@ -196,6 +223,8 @@ class BankStore {
 
         // Cargamos los movimientos del usuario recién logueado
         await this.fetchMovements();
+        // Cargamos datos del usuario (balance y account_number)
+        await this.fetchCurrentUser();
         return true;
       }
     } catch (error) {
@@ -206,7 +235,14 @@ class BankStore {
 
   // Método para cerrar sesión
   logout() {
-    this.user = { isLoggedIn: false, role: null, token: null, id: null };
+    this.user = { 
+      isLoggedIn: false, 
+      role: null, 
+      token: null, 
+      id: null,
+      balance: 0,
+      accountNumber: null 
+    };
     this.movements = []; // Limpiamos movimientos
     this.allUsers = []; // Limpiamos todos los usuarios
     localStorage.clear();

@@ -85,7 +85,7 @@ export class AppMain extends LitElement {
             ?active=${this.activeTab === "transferir"}
             @click=${() => (this.activeTab = "transferir")}
           >
-            Transferir
+            Transferencias
           </button>
 
           ${store.user.role === "admin"
@@ -134,7 +134,7 @@ export class AppMain extends LitElement {
         `;
       case "transferir":
         return html`
-          <h2>Nueva Transferencia / Gasto</h2>
+          <h2>Realizar Transferencia</h2>
           <transferir-form
             @movimiento-creado=${() => {
               this.activeTab = "resumen";
