@@ -258,6 +258,9 @@ app.delete("/api/movements/:id", async (req, res) => {
     // Revertir el balance del usuario según el tipo de movimiento
     const amount = movement[0].amount;
     const userIdMovement = movement[0].userId;
+    const targetAccountNumber = movement[0].target_account_number;
+    const movementType = movement[0].type;
+    const movementDate = movement[0].date;
     
     // Revertir el balance: si fue un gasto (-), sumar; si fue ingreso (+), restar
     await connection.query(
@@ -265,7 +268,59 @@ app.delete("/api/movements/:id", async (req, res) => {
       [amount, userIdMovement]
     );
 
-    // Borrar el movimiento
+    // Si es una transferencia, también revertir el balance del otro usuario (con signo opuesto)
+    if (targetAccountNumber) {
+      try {
+        if (movementType === 'expense') {
+          // Es el movimiento del usuario que envió (expense, -5)
+          // Buscar el usuario destino por su account_number y revertir su balance
+          const [targetUser] = await connection.query(
+            "SELECT id FROM users WHERE account_number = ?",
+            [targetAccountNumber]
+          );
+
+          if (targetUser.length > 0) {
+            // Revertir el balance del usuario destino (sumar el cantidad opuesta)
+            await connection.query(
+              "UPDATE users SET balance = balance + ? WHERE id = ?",
+              [amount, targetUser[0].id]
+            );
+
+            // Borrar el movimiento del usuario destino (income)
+            await connection.query(
+              "DELETE FROM movements WHERE userId = ? AND type = 'income' AND amount = ? AND DATE(date) = DATE(?)",
+              [targetUser[0].id, -amount, movementDate]
+            );
+          }
+        } else if (movementType === 'income') {
+          // Es el movimiento del usuario que recibió (income, +5)
+          // El monto guardado es positivo (+5), buscamos el movimiento del origen con monto negativo (-5)
+          const [sourceMovement] = await connection.query(
+            "SELECT userId FROM movements WHERE amount = ? AND type = 'expense' AND target_account_number IS NOT NULL AND DATE(date) = DATE(?)",
+            [-amount, movementDate]
+          );
+
+          if (sourceMovement.length > 0) {
+            // Revertir el balance del usuario origen (devolver lo que envió)
+            // El usuario origen había perdido -5, así que le sumamos 5
+            await connection.query(
+              "UPDATE users SET balance = balance + ? WHERE id = ?",
+              [Math.abs(amount), sourceMovement[0].userId]
+            );
+
+            // Borrar el movimiento del usuario origen
+            await connection.query(
+              "DELETE FROM movements WHERE userId = ? AND type = 'expense' AND amount = ? AND DATE(date) = DATE(?)",
+              [sourceMovement[0].userId, -amount, movementDate]
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error al revertir balance del usuario destino:", error);
+      }
+    }
+
+    // Borrar el movimiento del usuario actual
     await connection.query("DELETE FROM movements WHERE id = ?", [id]);
 
     connection.release();
