@@ -10,7 +10,6 @@ export class TransferirForm extends LitElement {
       <form @submit=${this._handleSubmit}>
         <div style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
           <p><strong>Tu número de cuenta:</strong> ${store.user.accountNumber || "Cargando..."}</p>
-          <p><strong>Saldo disponible:</strong> ${store.user.balance ? store.user.balance.toFixed(2) + "€" : "Cargando..."}</p>
         </div>
 
         <input

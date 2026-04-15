@@ -261,6 +261,16 @@ app.delete("/api/movements/:id", async (req, res) => {
       });
     }
 
+    // Revertir el balance del usuario según el tipo de movimiento
+    const amount = movement[0].amount;
+    const userIdMovement = movement[0].userId;
+    
+    // Revertir el balance: si fue un gasto (-), sumar; si fue ingreso (+), restar
+    await connection.query(
+      "UPDATE users SET balance = balance - ? WHERE id = ?",
+      [amount, userIdMovement]
+    );
+
     // Borrar el movimiento
     await connection.query("DELETE FROM movements WHERE id = ?", [id]);
 
@@ -424,6 +434,12 @@ setInterval(async () => {
           transaction.amount >= 0 ? "income" : "expense",
           today,
         ]
+      );
+
+      // Actualizar el balance del usuario con el monto del movimiento
+      await connection.query(
+        "UPDATE users SET balance = balance + ? WHERE id = ?",
+        [transaction.amount, user.id]
       );
     }
 

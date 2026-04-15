@@ -23,6 +23,25 @@ class BankStore {
     if (this.user.isLoggedIn) {
       this.fetchMovements();
       this.fetchCurrentUser();
+      // Iniciar polling automático para detectar movimientos automáticos
+      this.startAutoRefresh();
+    }
+  }
+
+  // Iniciar refresh automático cada 30 segundos
+  startAutoRefresh() {
+    this.refreshInterval = setInterval(() => {
+      if (this.user.isLoggedIn) {
+        this.fetchMovements();
+        this.fetchCurrentUser();
+      }
+    }, 10000); // 10 segundos
+  }
+
+  // Detener el refresh automático
+  stopAutoRefresh() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
     }
   }
 
@@ -125,6 +144,8 @@ class BankStore {
         this.movements = this.movements.filter(
           (m) => Number(m.id) !== Number(id),
         );
+        // Refrescar el balance del usuario después de borrar
+        await this.fetchCurrentUser();
         this.notify();
         return true;
       } else {
@@ -225,6 +246,8 @@ class BankStore {
         await this.fetchMovements();
         // Cargamos datos del usuario (balance y account_number)
         await this.fetchCurrentUser();
+        // Iniciar polling automático para detectar movimientos automáticos
+        this.startAutoRefresh();
         return true;
       }
     } catch (error) {
@@ -235,6 +258,9 @@ class BankStore {
 
   // Método para cerrar sesión
   logout() {
+    // Detener el polling automático
+    this.stopAutoRefresh();
+    
     this.user = { 
       isLoggedIn: false, 
       role: null, 

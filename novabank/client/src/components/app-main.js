@@ -13,6 +13,7 @@ export class AppMain extends LitElement {
   static properties = {
     activeTab: { type: String },
     isRegistering: { type: Boolean },
+    balance: { type: Number },
   };
 
   static styles = appMainStyles;
@@ -21,9 +22,13 @@ export class AppMain extends LitElement {
     super();
     // Si es admin, comenzar en movimientos, si no en resumen
     this.activeTab = store.user.role === "admin" ? "movimientos" : "resumen";
+    this.balance = store.user.balance;
 
     // Suscripción al store
     store.subscribe(() => {
+      // Actualizar el balance reactivo
+      this.balance = store.user.balance;
+      
       // Si no está logueado, ir a login
       if (!store.user.isLoggedIn) {
         this.activeTab = "resumen";
@@ -112,11 +117,11 @@ export class AppMain extends LitElement {
             <p>
               Saldo Total:
               <b
-                style="font-size: 1.5em; color: ${store.getSaldoTotal() >= 0
+                style="font-size: 1.5em; color: ${this.balance >= 0
                   ? "green"
                   : "red"}"
               >
-                ${store.getSaldoTotal().toFixed(2)}€
+                ${this.balance.toFixed(2)}€
               </b>
             </p>
           </div>
