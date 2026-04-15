@@ -19,14 +19,21 @@ export class AppMain extends LitElement {
 
   constructor() {
     super();
-    this.activeTab = "resumen";
+    // Si es admin, comenzar en movimientos, si no en resumen
+    this.activeTab = store.user.role === "admin" ? "movimientos" : "resumen";
 
     // Suscripción al store
     store.subscribe(() => {
-      if (
-        !store.user.isLoggedIn ||
-        (this.activeTab === "admin" && store.user.role !== "admin")
-      ) {
+      // Si no está logueado, ir a login
+      if (!store.user.isLoggedIn) {
+        this.activeTab = "resumen";
+      } 
+      // Si es admin y está en resumen, cambiar a movimientos
+      else if (store.user.role === "admin" && this.activeTab === "resumen") {
+        this.activeTab = "movimientos";
+      }
+      // Si no es admin pero está en admin, cambiar a resumen
+      else if (store.user.role !== "admin" && this.activeTab === "admin") {
         this.activeTab = "resumen";
       }
       this.requestUpdate();
@@ -60,12 +67,14 @@ export class AppMain extends LitElement {
           <button @click=${() => store.logout()}>Cerrar Sesión</button>
         </div>
         <nav>
-          <button
-            ?active=${this.activeTab === "resumen"}
-            @click=${() => (this.activeTab = "resumen")}
-          >
-            Resumen
-          </button>
+          ${store.user.role !== "admin"
+            ? html`<button
+                ?active=${this.activeTab === "resumen"}
+                @click=${() => (this.activeTab = "resumen")}
+              >
+                Resumen
+              </button>`
+            : ""}
           <button
             ?active=${this.activeTab === "movimientos"}
             @click=${() => (this.activeTab = "movimientos")}

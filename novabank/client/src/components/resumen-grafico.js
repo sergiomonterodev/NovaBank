@@ -5,18 +5,36 @@ import Chart from 'chart.js/auto'; // Importamos Chart.js
 export class ResumenGrafico extends LitElement {
   static styles = css`
     :host { display: block; max-width: 500px; margin: 20px auto; }
-    canvas { width: 100% !important; height: auto !important; }
+    canvas { 
+      width: 100% !important; 
+      height: 300px !important;
+      display: block;
+    }
   `;
 
   firstUpdated() {
-    this._initChart();
-    // Nos suscribimos para actualizar el gráfico si cambian los datos
-    store.subscribe(() => this._updateChart());
+    // Pequeño delay para asegurar que el DOM esté completamente renderizado
+    setTimeout(() => {
+      this._initChart();
+      // Nos suscribimos para actualizar el gráfico si cambian los datos
+      store.subscribe(() => this._updateChart());
+    }, 0);
   }
 
   _initChart() {
-    const ctx = this.renderRoot.querySelector('#myChart').getContext('2d');
+    const canvas = this.renderRoot.querySelector('#myChart');
+    if (!canvas) {
+      console.warn('Canvas not found');
+      return;
+    }
+    
+    const ctx = canvas.getContext('2d');
     const { ingresos, gastos } = this._getData();
+
+    // Destruir gráfico anterior si existe
+    if (this.chart) {
+      this.chart.destroy();
+    }
 
     this.chart = new Chart(ctx, {
       type: 'doughnut', // Gráfico circular tipo dónut
@@ -30,6 +48,7 @@ export class ResumenGrafico extends LitElement {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { position: 'bottom' }
         }
@@ -41,11 +60,11 @@ export class ResumenGrafico extends LitElement {
     // Calculamos totales filtrando por tipo
     const ingresos = store.movements
       .filter(m => m.type === 'income')
-      .reduce((acc, m) => acc + m.amount, 0);
+      .reduce((acc, m) => acc + Number(m.amount), 0);
     
     const gastos = Math.abs(store.movements
       .filter(m => m.type === 'expense')
-      .reduce((acc, m) => acc + m.amount, 0));
+      .reduce((acc, m) => acc + Number(m.amount), 0));
 
     return { ingresos, gastos };
   }
