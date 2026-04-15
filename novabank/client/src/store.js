@@ -41,7 +41,12 @@ class BankStore {
       const response = await fetch(
         `http://localhost:3000/api/movements?userId=${this.user.id}&userRole=${this.user.role}`,
       );
-      this.movements = await response.json();
+      const data = await response.json();
+      // Convertir amounts a números (MySQL retorna DECIMAL como strings)
+      this.movements = data.map(mov => ({
+        ...mov,
+        amount: Number(mov.amount)
+      }));
       this.notify();
     } catch (error) {
       console.error("Error:", error);
@@ -50,7 +55,7 @@ class BankStore {
 
   // Obtener el saldo total (amount)
   getSaldoTotal() {
-    return this.movements.reduce((acc, mov) => acc + mov.amount, 0);
+    return this.movements.reduce((acc, mov) => acc + Number(mov.amount), 0);
   }
 
   // Añadir movimiento
