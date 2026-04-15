@@ -30,6 +30,7 @@ export class TransferirForm extends LitElement {
           type="number"
           name="amount"
           step="0.01"
+          min="0.01"
           placeholder="Cantidad (ej: 50.00)"
           required
         />
@@ -46,6 +47,12 @@ export class TransferirForm extends LitElement {
     const targetAccountNumber = formData.get("targetAccountNumber");
     const concept = formData.get("concept");
     const amount = parseFloat(formData.get("amount"));
+
+    // Validación: no transferir a la misma cuenta
+    if (targetAccountNumber === store.user.accountNumber) {
+      store.addNotification("No puedes hacer una transferencia a tu propia cuenta", "error");
+      return;
+    }
 
     // Validación: cantidad debe ser menor al saldo
     if (amount > store.user.balance) {
