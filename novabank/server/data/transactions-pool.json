@@ -1,0 +1,32 @@
+{
+  "transactions": [
+    { "concept": "Intereses mensuales", "amount": 1.5 },
+    { "concept": "Comisión de mantenimiento", "amount": -2.0 },
+    { "concept": "Reembolso por compra", "amount": 5.0 },
+    { "concept": "Pago de servicios", "amount": -3.5 },
+    { "concept": "Dividendos", "amount": 2.5 },
+    { "concept": "Cuota bancaria", "amount": -1.0 },
+    { "concept": "Compensación de cuenta", "amount": 0.75 },
+    { "concept": "Movimiento automático", "amount": 0.5 },
+    { "concept": "Ingreso de nómina", "amount": 1200.0 },
+    { "concept": "Pago alquiler", "amount": -450.0 },
+    { "concept": "Compra supermercado", "amount": -65.3 },
+    { "concept": "Transferencia recibida", "amount": 200.0 },
+    { "concept": "Pago luz", "amount": -45.6 },
+    { "concept": "Pago agua", "amount": -30.2 },
+    { "concept": "Suscripción streaming", "amount": -9.99 },
+    { "concept": "Ingreso devolución impuestos", "amount": 150.0 },
+    { "concept": "Compra online", "amount": -89.99 },
+    { "concept": "Ingreso puntual", "amount": 75.0 },
+    { "concept": "Pago gasolina", "amount": -60.0 },
+    { "concept": "Transferencia enviada", "amount": -100.0 },
+    { "concept": "Intereses ahorro", "amount": 3.2 },
+    { "concept": "Comisión transferencia", "amount": -1.5 },
+    { "concept": "Pago gimnasio", "amount": -25.0 },
+    { "concept": "Ingreso venta artículo", "amount": 40.0 },
+    { "concept": "Compra farmacia", "amount": -12.75 },
+    { "concept": "Ingreso bonificación", "amount": 20.0 },
+    { "concept": "Pago internet", "amount": -35.0 },
+    { "concept": "Reintegro cajero", "amount": -100.0 }
+  ]
+}

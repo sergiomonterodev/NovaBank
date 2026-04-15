@@ -176,7 +176,7 @@ export class AdminPanel extends LitElement {
 
   render() {
     return html`
-      <table>
+      <table>>
         <thead>
           <tr>
             <th>ID</th>
