@@ -2,201 +2,275 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const mysql = require("mysql2/promise");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+const SECRET_KEY = process.env.JWT_SECRET || "novabank_secret_key";
 
 app.use(cors());
 app.use(express.json());
 
-const jwt = require("jsonwebtoken");
-const SECRET_KEY = "novabank_secret_key"; // En producción, esto va en un .env
-
-const USERS_PATH = path.join(__dirname, "data", "users.json");
-
-const getUsers = () => {
-  const data = fs.readFileSync(USERS_PATH, "utf-8");
-  return JSON.parse(data);
-};
-
-// Endpoint de Register
-app.post('/api/register', (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const users = JSON.parse(fs.readFileSync(USERS_PATH, 'utf-8'));
-
-        // Validar si el usuario ya existe
-        if (users.find(u => u.email === email)) {
-            return res.status(400).json({ message: "El usuario ya existe" });
-        }
-
-        // Crear el nuevo usuario (rol 'user' por defecto)
-        const newUser = {
-            id: Date.now(),
-            email,
-            password,
-            role: 'user'
-        };
-
-        users.push(newUser);
-        fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-
-        res.status(201).json({ message: "Usuario creado con éxito" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al registrar" });
-    }
+// Crear pool de conexiones a MySQL
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "novabank",
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-// Endpoint de Login
-app.post("/api/login", (req, res) => {
+// Endpoint de Register
+app.post("/api/register", async (req, res) => {
   const { email, password } = req.body;
-  const users = getUsers(); // Leemos del archivo JSON
+  try {
+    const connection = await pool.getConnection();
 
-  const user = users.find((u) => u.email === email && u.password === password);
+    // Validar si el usuario ya existe
+    const [existingUser] = await connection.query(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
 
-  if (user) {
-    const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, {
-      expiresIn: "1h",
-    });
-    res.json({
-      token: token,
-      role: user.role,
-      userId: user.id,
-    });
-  } else {
-    res.status(401).json({ message: "Credenciales incorrectas" });
+    if (existingUser.length > 0) {
+      connection.release();
+      return res.status(400).json({ message: "El usuario ya existe" });
+    }
+
+    // Crear el nuevo usuario (rol 'user' por defecto)
+    await connection.query(
+      "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
+      [email, password, "user"]
+    );
+
+    connection.release();
+    res.status(201).json({ message: "Usuario creado con éxito" });
+  } catch (error) {
+    console.error("Error en registro:", error);
+    res.status(500).json({ message: "Error al registrar" });
   }
 });
 
-const DATA_PATH = path.join(__dirname, "data", "movements.json");
+// Endpoint de Login
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const connection = await pool.getConnection();
+
+    const [users] = await connection.query(
+      "SELECT id, role FROM users WHERE email = ? AND password = ?",
+      [email, password]
+    );
+
+    connection.release();
+
+    if (users.length > 0) {
+      const user = users[0];
+      const token = jwt.sign(
+        { id: user.id, role: user.role },
+        SECRET_KEY,
+        { expiresIn: "1h" }
+      );
+      res.json({
+        token: token,
+        role: user.role,
+        userId: user.id,
+      });
+    } else {
+      res.status(401).json({ message: "Credenciales incorrectas" });
+    }
+  } catch (error) {
+    console.error("Error en login:", error);
+    res.status(500).json({ message: "Error al iniciar sesión" });
+  }
+});
 
 // Endpoint para obtener movimientos
-app.get("/api/movements", (req, res) => {
-  const userId = req.query.userId; // Recibimos el id por la URL
-  const userRole = req.query.userRole; // Recibimos el rol del usuario
-  try {
-    const movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
-    let userMovements = movements;
+app.get("/api/movements", async (req, res) => {
+  const userId = req.query.userId;
+  const userRole = req.query.userRole;
 
-    // Filtrar según el rol
+  try {
+    const connection = await pool.getConnection();
+    let query;
+    let params;
+
     if (userRole === "admin") {
       // Los admins ven todos los movimientos
-      userMovements = movements;
+      query = "SELECT * FROM movements ORDER BY date DESC, id DESC";
+      params = [];
     } else {
       // Los usuarios normales y lectores solo ven sus propios movimientos
-      userMovements = movements.filter((m) => m.userId == userId);
+      query =
+        "SELECT * FROM movements WHERE userId = ? ORDER BY date DESC, id DESC";
+      params = [userId];
     }
-    
-    res.json(userMovements);
+
+    const [movements] = await connection.query(query, params);
+    connection.release();
+
+    res.json(movements);
   } catch (error) {
+    console.error("Error al obtener movimientos:", error);
     res.status(500).json({ message: "Error al leer datos" });
   }
 });
 
 // Endpoint para crear movimientos
-app.post('/api/movements', (req, res) => {
-    const { userRole } = req.body;
-    
-    // Los lectores no pueden crear movimientos
-    if (userRole === "reader") {
-      return res.status(403).json({ message: "Los lectores no pueden crear movimientos" });
-    }
+app.post("/api/movements", async (req, res) => {
+  const { userId, concept, amount, type, date, userRole } = req.body;
 
-    const nuevoMovimiento = {
-        id: Date.now(),
-        ...req.body
-    };
-    try {
-        const movements = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-        movements.push(nuevoMovimiento);
-        fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
-        res.status(201).json(nuevoMovimiento);
-    } catch (e) {
-        res.status(500).send("Error");
-    }
+  // Los lectores no pueden crear movimientos
+  if (userRole === "reader") {
+    return res
+      .status(403)
+      .json({ message: "Los lectores no pueden crear movimientos" });
+  }
+
+  try {
+    const connection = await pool.getConnection();
+
+    await connection.query(
+      "INSERT INTO movements (userId, concept, amount, type, date) VALUES (?, ?, ?, ?, ?)",
+      [userId, concept, amount, type, date]
+    );
+
+    const [newMovement] = await connection.query(
+      "SELECT * FROM movements WHERE userId = ? ORDER BY id DESC LIMIT 1",
+      [userId]
+    );
+
+    connection.release();
+    res.status(201).json(newMovement[0]);
+  } catch (error) {
+    console.error("Error al crear movimiento:", error);
+    res.status(500).json({ message: "Error al crear movimiento" });
+  }
 });
 
 // Endpoint para borrar un movimiento por ID
-app.delete("/api/movements/:id", (req, res) => {
+app.delete("/api/movements/:id", async (req, res) => {
   const { id } = req.params;
   const { userRole, userId } = req.query;
 
   // Los lectores no pueden borrar movimientos
   if (userRole === "reader") {
-    return res.status(403).json({ message: "Los lectores no pueden borrar movimientos" });
+    return res
+      .status(403)
+      .json({ message: "Los lectores no pueden borrar movimientos" });
   }
 
   try {
-    let movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
-    
-    // Si no es admin, verificar que sea el propietario del movimiento
-    if (userRole !== "admin") {
-      const movementToDelete = movements.find((m) => Number(m.id) === Number(id));
-      if (!movementToDelete || Number(movementToDelete.userId) !== Number(userId)) {
-        return res.status(403).json({ message: "No tienes permiso para borrar este movimiento" });
-      }
-    }
+    const connection = await pool.getConnection();
 
-    // Convertimos el id a número con Number() para evitar fallos de tipo
-    const initialLength = movements.length;
-    movements = movements.filter((m) => Number(m.id) !== Number(id));
+    // Obtener el movimiento
+    const [movement] = await connection.query(
+      "SELECT * FROM movements WHERE id = ?",
+      [id]
+    );
 
-    if (movements.length === initialLength) {
+    if (movement.length === 0) {
+      connection.release();
       return res.status(404).json({ message: "No se encontró el ID" });
     }
 
-    fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
+    // Si no es admin, verificar que sea el propietario del movimiento
+    if (userRole !== "admin" && movement[0].userId != userId) {
+      connection.release();
+      return res.status(403).json({
+        message: "No tienes permiso para borrar este movimiento",
+      });
+    }
+
+    // Borrar el movimiento
+    await connection.query("DELETE FROM movements WHERE id = ?", [id]);
+
+    connection.release();
     res.json({ message: "Borrado ok" });
   } catch (error) {
+    console.error("Error al borrar movimiento:", error);
     res.status(500).json({ message: "Error interno" });
   }
 });
 
 // Endpoint para editar un movimiento por ID
-app.put("/api/movements/:id", (req, res) => {
+app.put("/api/movements/:id", async (req, res) => {
   const { id } = req.params;
-  const { concept, userRole, userId } = req.body; // Solo permitiremos editar el concepto
+  const { concept, userRole, userId } = req.body;
 
   // Los lectores no pueden editar movimientos
   if (userRole === "reader") {
-    return res.status(403).json({ message: "Los lectores no pueden editar movimientos" });
+    return res
+      .status(403)
+      .json({ message: "Los lectores no pueden editar movimientos" });
   }
 
   try {
-    let movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
-    const index = movements.findIndex((m) => Number(m.id) === Number(id));
+    const connection = await pool.getConnection();
 
-    if (index !== -1) {
-      // Si no es admin, verificar que sea el propietario del movimiento
-      if (userRole !== "admin" && Number(movements[index].userId) !== Number(userId)) {
-        return res.status(403).json({ message: "No tienes permiso para editar este movimiento" });
-      }
+    // Obtener el movimiento
+    const [movement] = await connection.query(
+      "SELECT * FROM movements WHERE id = ?",
+      [id]
+    );
 
-      movements[index].concept = concept;
-      fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
-      res.json(movements[index]);
-    } else {
-      res.status(404).json({ message: "No encontrado" });
+    if (movement.length === 0) {
+      connection.release();
+      return res.status(404).json({ message: "No encontrado" });
     }
+
+    // Si no es admin, verificar que sea el propietario del movimiento
+    if (userRole !== "admin" && movement[0].userId != userId) {
+      connection.release();
+      return res.status(403).json({
+        message: "No tienes permiso para editar este movimiento",
+      });
+    }
+
+    // Actualizar el concepto
+    await connection.query(
+      "UPDATE movements SET concept = ? WHERE id = ?",
+      [concept, id]
+    );
+
+    // Obtener el movimiento actualizado
+    const [updatedMovement] = await connection.query(
+      "SELECT * FROM movements WHERE id = ?",
+      [id]
+    );
+
+    connection.release();
+    res.json(updatedMovement[0]);
   } catch (error) {
+    console.error("Error al actualizar movimiento:", error);
     res.status(500).json({ message: "Error al actualizar" });
   }
 });
 
 // Endpoint para obtener todos los usuarios (Solo para el panel Admin)
-app.get("/api/admin/users", (req, res) => {
+app.get("/api/admin/users", async (req, res) => {
   try {
-    const users = JSON.parse(fs.readFileSync(USERS_PATH, "utf-8"));
-    // Devolvemos los usuarios pero sin la contraseña por seguridad
-    const safeUsers = users.map(({ password, ...user }) => user);
-    res.json(safeUsers);
+    const connection = await pool.getConnection();
+
+    const [users] = await connection.query(
+      "SELECT id, email, role FROM users"
+    );
+
+    connection.release();
+    res.json(users);
   } catch (error) {
+    console.error("Error al obtener usuarios:", error);
     res.status(500).json({ message: "Error al obtener usuarios" });
   }
 });
 
 // Endpoint para cambiar el rol de un usuario (Solo admin)
-app.put("/api/admin/users/:id/role", (req, res) => {
+app.put("/api/admin/users/:id/role", async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
@@ -207,18 +281,29 @@ app.put("/api/admin/users/:id/role", (req, res) => {
       return res.status(400).json({ message: "Rol inválido" });
     }
 
-    let users = JSON.parse(fs.readFileSync(USERS_PATH, "utf-8"));
-    const userIndex = users.findIndex((u) => Number(u.id) === Number(id));
+    const connection = await pool.getConnection();
 
-    if (userIndex !== -1) {
-      users[userIndex].role = role;
-      fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-      const { password, ...safeUser } = users[userIndex];
-      res.json({ message: "Rol actualizado", user: safeUser });
-    } else {
-      res.status(404).json({ message: "Usuario no encontrado" });
+    // Actualizar el rol
+    const result = await connection.query(
+      "UPDATE users SET role = ? WHERE id = ?",
+      [role, id]
+    );
+
+    if (result[0].affectedRows === 0) {
+      connection.release();
+      return res.status(404).json({ message: "Usuario no encontrado" });
     }
+
+    // Obtener el usuario actualizado
+    const [updatedUser] = await connection.query(
+      "SELECT id, email, role FROM users WHERE id = ?",
+      [id]
+    );
+
+    connection.release();
+    res.json({ message: "Rol actualizado", user: updatedUser[0] });
   } catch (error) {
+    console.error("Error al actualizar rol:", error);
     res.status(500).json({ message: "Error al actualizar rol" });
   }
 });
@@ -227,11 +312,15 @@ app.put("/api/admin/users/:id/role", (req, res) => {
 const getRandomTransaction = () => {
   try {
     const transactionsPool = JSON.parse(
-      fs.readFileSync(path.join(__dirname, "data", "transactions-pool.json"), "utf-8")
+      fs.readFileSync(
+        path.join(__dirname, "data", "transactions-pool.json"),
+        "utf-8"
+      )
     );
-    const randomTransaction = transactionsPool.transactions[
-      Math.floor(Math.random() * transactionsPool.transactions.length)
-    ];
+    const randomTransaction =
+      transactionsPool.transactions[
+        Math.floor(Math.random() * transactionsPool.transactions.length)
+      ];
     return randomTransaction;
   } catch (e) {
     console.log("Error al leer transactions-pool.json:", e);
@@ -240,32 +329,39 @@ const getRandomTransaction = () => {
 };
 
 // Simulación de Cron Job: Cada 2 minutos (120000 ms)
-setInterval(() => {
+setInterval(async () => {
   try {
-    const movements = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
-    const users = JSON.parse(fs.readFileSync(USERS_PATH, "utf-8"));
+    const connection = await pool.getConnection();
 
-    // Creamos un movimiento para CADA usuario registrado
-    users.forEach((user) => {
+    // Obtener todos los usuarios
+    const [users] = await connection.query("SELECT id FROM users");
+
+    // Crear un movimiento para CADA usuario registrado
+    for (const user of users) {
       const transaction = getRandomTransaction();
-      
-      movements.push({
-        id: Date.now() + Math.random(),
-        userId: user.id,
-        concept: transaction.concept,
-        amount: transaction.amount,
-        type: transaction.amount >= 0 ? "income" : "expense",
-        date: new Date().toISOString().split("T")[0],
-      });
-    });
+      const today = new Date().toISOString().split("T")[0];
 
-    fs.writeFileSync(DATA_PATH, JSON.stringify(movements, null, 2));
+      await connection.query(
+        "INSERT INTO movements (userId, concept, amount, type, date) VALUES (?, ?, ?, ?, ?)",
+        [
+          user.id,
+          transaction.concept,
+          transaction.amount,
+          transaction.amount >= 0 ? "income" : "expense",
+          today,
+        ]
+      );
+    }
+
+    console.log(`✅ Cron job ejecutado: ${users.length} movimientos creados`);
+    connection.release();
   } catch (e) {
-    console.log(e);
+    console.error("Error en cron job:", e);
   }
 }, 120000);
 
 // Server iniciado
 app.listen(PORT, () => {
   console.log(`🚀 NovaBank Server corriendo en http://localhost:${PORT}`);
+  console.log(`📊 Base de datos: ${process.env.DB_NAME}`);
 });
