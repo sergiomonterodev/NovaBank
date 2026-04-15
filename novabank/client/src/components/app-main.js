@@ -83,12 +83,14 @@ export class AppMain extends LitElement {
           >
             Mis Movimientos
           </button>
-          <button
-            ?active=${this.activeTab === "transferir"}
-            @click=${() => (this.activeTab = "transferir")}
-          >
-            Transferencias
-          </button>
+          ${store.user.role !== "reader"
+            ? html`<button
+                ?active=${this.activeTab === "transferir"}
+                @click=${() => (this.activeTab = "transferir")}
+              >
+                Transferencias
+              </button>`
+            : ""}
           ${store.user.role === "admin"
             ? html`<button
                 ?active=${this.activeTab === "gestion"}
