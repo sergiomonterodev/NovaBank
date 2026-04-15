@@ -10,6 +10,16 @@ export class MovimientosTable extends LitElement {
     deletingId: { type: Object }
   };
 
+  _formatDate(date) {
+    if (!date) return "";
+    // Si la fecha contiene T (formato ISO), tomar solo la parte de la fecha
+    if (date.includes("T")) {
+      return date.split("T")[0];
+    }
+    // Si ya es formato AAAA-MM-DD, devolverla tal cual
+    return date;
+  }
+
   constructor() {
     super();
     this.editingId = null;
@@ -70,7 +80,7 @@ export class MovimientosTable extends LitElement {
                 </td>
 
                 <td class="${mov.type}">${mov.amount}€</td>
-                <td>${mov.date}</td>
+                <td>${this._formatDate(mov.date)}</td>
                 ${store.user.role === "admin" ? html`<td>${mov.userId}</td>` : ""}
                 <td>
                   ${!isReader ? html`
