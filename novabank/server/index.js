@@ -9,6 +9,7 @@ const mysql = require("mysql2/promise");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.JWT_SECRET || "novabank_secret_key";
+const isTestEnv = process.env.NODE_ENV === "test";
 
 app.use(cors());
 app.use(express.json());
@@ -462,7 +463,7 @@ const getRandomTransaction = () => {
 };
 
 // Simulación de Cron Job: Cada 2 minutos (120000 ms)
-setInterval(async () => {
+const runAutoTransactions = async () => {
   try {
     const connection = await pool.getConnection();
 
@@ -497,10 +498,23 @@ setInterval(async () => {
   } catch (e) {
     console.error("Error en cron job:", e);
   }
-}, 120000);
+};
+
+if (!isTestEnv) {
+  setInterval(runAutoTransactions, 120000);
+}
 
 // Server iniciado
-app.listen(PORT, () => {
-  console.log(`🚀 NovaBank Server corriendo en http://localhost:${PORT}`);
-  console.log(`📊 Base de datos: ${process.env.DB_NAME}`);
-});
+if (!isTestEnv) {
+  app.listen(PORT, () => {
+    console.log(`🚀 NovaBank Server corriendo en http://localhost:${PORT}`);
+    console.log(`📊 Base de datos: ${process.env.DB_NAME}`);
+  });
+}
+
+module.exports = {
+  app,
+  getRandomTransaction,
+  runAutoTransactions,
+  pool,
+};

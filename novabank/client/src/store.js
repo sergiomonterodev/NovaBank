@@ -347,4 +347,5 @@ class BankStore {
 }
 
 // Exportamos una única instancia (Singleton)
+export { BankStore };
 export const store = new BankStore();
