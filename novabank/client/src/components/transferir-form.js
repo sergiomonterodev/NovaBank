@@ -40,6 +40,9 @@ export class TransferirForm extends LitElement {
     `;
   }
 
+  /**
+   * Valida y envía una transferencia al store.
+   */
   async _handleSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);

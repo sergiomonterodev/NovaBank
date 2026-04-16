@@ -104,6 +104,9 @@ export class AppMain extends LitElement {
     `;
   }
 
+  /**
+   * Renderiza el contenido principal según la pestaña activa y el rol.
+   */
   _renderTab() {
     switch (this.activeTab) {
       case "resumen":
