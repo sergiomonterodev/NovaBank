@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "test": "npm --prefix novabank/server test && npm --prefix novabank/client test",
+    "test:coverage": "npm --prefix novabank/server run test:coverage && npm --prefix novabank/client run test:coverage"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
