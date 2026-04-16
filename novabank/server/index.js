@@ -442,7 +442,10 @@ app.put("/api/admin/users/:id/role", async (req, res) => {
   }
 });
 
-// Función para obtener una transacción aleatoria del pool
+/**
+ * Obtiene una transacción aleatoria desde el pool de movimientos automáticos.
+ * @returns {{concept: string, amount: number}}
+ */
 const getRandomTransaction = () => {
   try {
     const transactionsPool = JSON.parse(
@@ -462,7 +465,9 @@ const getRandomTransaction = () => {
   }
 };
 
-// Simulación de Cron Job: Cada 2 minutos (120000 ms)
+/**
+ * Genera movimientos automáticos para todos los usuarios y actualiza balance.
+ */
 const runAutoTransactions = async () => {
   try {
     const connection = await pool.getConnection();

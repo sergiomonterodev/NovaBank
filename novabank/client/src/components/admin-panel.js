@@ -36,12 +36,18 @@ export class AdminPanel extends LitElement {
     if (this._unsubscribe) this._unsubscribe();
   }
 
+  /**
+   * Actualiza el rol seleccionado localmente antes de guardar.
+   */
   handleRoleChange(userId, event) {
     const newRole = event.target.value;
     this.selectedRoles[userId] = newRole;
     this.requestUpdate();
   }
 
+  /**
+   * Persiste el cambio de rol en backend y refresca el estado local.
+   */
   async handleRoleUpdate(userId) {
     const newRole = this.selectedRoles[userId];
     if (!newRole) return;
@@ -66,6 +72,9 @@ export class AdminPanel extends LitElement {
     return date;
   }
 
+  /**
+   * Abre/cierra el modal y carga movimientos del usuario seleccionado.
+   */
   async toggleUserMovements(userId) {
     if (this.showMovementsModal && this.selectedUserId === userId) {
       // Si ya está abierto, cerrarlo
@@ -101,6 +110,9 @@ export class AdminPanel extends LitElement {
     this.requestUpdate();
   }
 
+  /**
+   * Envía la edición de concepto de un movimiento y recarga la lista.
+   */
   async _saveEditMovement(movementId) {
     const input = this.renderRoot.querySelector(`input[data-movement="${movementId}"]`);
     if (!input) return;
@@ -148,6 +160,9 @@ export class AdminPanel extends LitElement {
     this.requestUpdate();
   }
 
+  /**
+   * Confirma y ejecuta el borrado de un movimiento.
+   */
   async _confirmDelete(movementId) {
     try {
       const response = await fetch(

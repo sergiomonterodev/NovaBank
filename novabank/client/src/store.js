@@ -28,34 +28,45 @@ class BankStore {
     }
   }
 
-  // Iniciar refresh automático cada 30 segundos
+  /**
+   * Inicia la recarga periódica de movimientos y datos del usuario.
+   */
   startAutoRefresh() {
     this.refreshInterval = setInterval(() => {
       if (this.user.isLoggedIn) {
         this.fetchMovements();
         this.fetchCurrentUser();
       }
-    }, 10000); // 10 segundos
+    }, 30000); // 30 segundos
   }
 
-  // Detener el refresh automático
+  /**
+   * Detiene la recarga periódica activa.
+   */
   stopAutoRefresh() {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
   }
 
-  // Método para que los componentes se "suscriban" a los cambios
+  /**
+   * Registra un callback para notificar cambios de estado del store.
+   * @param {Function} callback
+   */
   subscribe(callback) {
     this.subscribers.push(callback);
   }
 
-  // Notificar a todos los suscritos
+  /**
+   * Notifica a todos los suscriptores con el estado de movimientos actual.
+   */
   notify() {
     this.subscribers.forEach((callback) => callback(this.movements));
   }
 
-  // Llamada al backend
+  /**
+   * Carga los movimientos del usuario autenticado desde el backend.
+   */
   async fetchMovements() {
     if (!this.user.id) return; // Si no hay usuario, no pedimos nada
 
@@ -75,7 +86,9 @@ class BankStore {
     }
   }
 
-  // Obtener datos del usuario actual (balance y account_number)
+  /**
+   * Recupera balance y número de cuenta del usuario autenticado.
+   */
   async fetchCurrentUser() {
     if (!this.user.id) return;
 
@@ -97,7 +110,11 @@ class BankStore {
     return this.movements.reduce((acc, mov) => acc + Number(mov.amount), 0);
   }
 
-  // Añadir movimiento (transferencia)
+  /**
+   * Crea una transferencia y refresca estado local tras persistirla.
+   * @param {Object} movimiento
+   * @returns {Promise<boolean>}
+   */
   async addMovement(movimiento) {
     try {
       const movimientoConRole = {
@@ -130,7 +147,11 @@ class BankStore {
     return false;
   }
 
-  // Borrar movimiento
+  /**
+   * Borra un movimiento respetando permisos del rol actual.
+   * @param {number|string} id
+   * @returns {Promise<boolean>}
+   */
   async deleteMovement(id) {
     try {
       const response = await fetch(
@@ -158,6 +179,12 @@ class BankStore {
     return false;
   }
 
+  /**
+   * Actualiza el concepto de un movimiento existente.
+   * @param {number|string} id
+   * @param {string} newConcept
+   * @returns {Promise<boolean>}
+   */
   async updateMovement(id, newConcept) {
     try {
       const response = await fetch(
@@ -180,7 +207,7 @@ class BankStore {
         );
         if (index !== -1) {
           this.movements[index].concept = newConcept;
-          // Importante: Crear una copia del array para disparar la reactividad
+          // Crear una copia del array
           this.movements = [...this.movements];
           this.notify();
           return true;
@@ -195,6 +222,12 @@ class BankStore {
     return false;
   }
 
+  /**
+   * Registra un usuario en el sistema.
+   * @param {string} email
+   * @param {string} password
+   * @returns {Promise<{success: boolean, message?: string}>}
+   */
   async register(email, password) {
     try {
       const response = await fetch("http://localhost:3000/api/register", {
@@ -214,7 +247,12 @@ class BankStore {
     }
   }
 
-  // Método para loguearse
+  /**
+   * Autentica al usuario, persiste sesión y precarga datos iniciales.
+   * @param {string} email
+   * @param {string} password
+   * @returns {Promise<boolean>}
+   */
   async login(email, password) {
     try {
       const response = await fetch("http://localhost:3000/api/login", {
@@ -256,7 +294,9 @@ class BankStore {
     return false;
   }
 
-  // Método para cerrar sesión
+  /**
+   * Cierra sesión, limpia estado y detiene polling.
+   */
   logout() {
     // Detener el polling automático
     this.stopAutoRefresh();
@@ -275,7 +315,9 @@ class BankStore {
     this.notify();
   }
 
-  // Método para cargar todos los usuarios
+  /**
+   * Carga el listado de usuarios para el panel de administración.
+   */
   async fetchAllUsers() {
     if (this.user.role !== "admin") return;
 
@@ -288,7 +330,12 @@ class BankStore {
     }
   }
 
-  // Método para cambiar el rol de un usuario
+  /**
+   * Cambia el rol de un usuario desde el panel admin.
+   * @param {number|string} userId
+   * @param {"admin"|"user"|"reader"} newRole
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
   async changeUserRole(userId, newRole) {
     if (this.user.role !== "admin") return { success: false, message: "No tienes permisos" };
 
@@ -319,7 +366,13 @@ class BankStore {
     }
   }
 
-  // Métodos para notificaciones
+  /**
+   * Añade una notificación temporal al estado global.
+   * @param {string} message
+   * @param {"info"|"success"|"error"} type
+   * @param {number} duration
+   * @returns {number}
+   */
   addNotification(message, type = "info", duration = 4000) {
     const id = this.notificationId++;
     const notification = { id, message, type };
@@ -335,11 +388,18 @@ class BankStore {
     return id;
   }
 
+  /**
+   * Elimina una notificación por id.
+   * @param {number} id
+   */
   removeNotification(id) {
     this.notifications = this.notifications.filter(n => n.id !== id);
     this.notify();
   }
 
+  /**
+   * Limpia todas las notificaciones activas.
+   */
   clearNotifications() {
     this.notifications = [];
     this.notify();
