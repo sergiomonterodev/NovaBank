@@ -1,16 +1,10 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { store } from '../store.js';
+import { resumenGraficoStyles } from '../styles/resumen-grafico.styles.js';
 import Chart from 'chart.js/auto'; // Importamos Chart.js
 
 export class ResumenGrafico extends LitElement {
-  static styles = css`
-    :host { display: block; max-width: 500px; margin: 20px auto; }
-    canvas { 
-      width: 100% !important; 
-      height: 300px !important;
-      display: block;
-    }
-  `;
+  static styles = resumenGraficoStyles;
 
   firstUpdated() {
     // Pequeño delay para asegurar que el DOM esté completamente renderizado

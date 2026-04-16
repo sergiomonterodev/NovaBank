@@ -57,9 +57,7 @@ export class AppMain extends LitElement {
     return html`
       <notification-system></notification-system>
       <header>
-        <div
-          style="display: flex; justify-content: space-between; align-items: center;"
-        >
+        <div>
           <h1>NovaBank 🏦</h1>
           <button @click=${() => store.logout()}>Cerrar Sesión</button>
         </div>
@@ -114,13 +112,13 @@ export class AppMain extends LitElement {
           <h2>
             ${this.activeTab === "admin" ? "Mi Resumen" : "Estado de cuenta"}
           </h2>
-          <div style="text-align: center;">
+          <div class="balance-container">
             <p>
               Saldo Total:
               <b
-                style="font-size: 1.5em; color: ${this.balance >= 0
-                  ? "green"
-                  : "red"}"
+                class="balance-value ${this.balance >= 0
+                  ? "balance-positive"
+                  : "balance-negative"}"
               >
                 ${this.balance.toFixed(2)}€
               </b>
@@ -129,7 +127,7 @@ export class AppMain extends LitElement {
 
           <resumen-grafico></resumen-grafico>
 
-          <div style="margin-top: 20px; font-size: 0.9em; color: #666;">
+          <div class="last-update">
             Última actualización: ${new Date().toLocaleTimeString()}
           </div>
         `;

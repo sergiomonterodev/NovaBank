@@ -93,4 +93,8 @@ export const movimientosTableStyles = css`
     border-radius: 4px;
     cursor: pointer;
   }
+
+  .readonly {
+    color: #999;
+  }
 `;

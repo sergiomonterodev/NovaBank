@@ -27,4 +27,19 @@ export const transferirFormStyles = css`
     font-size: 0.9em;
     color: #555;
   }
+
+  .account-info {
+    background: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+
+  .account-info p {
+    margin: 0;
+  }
+
+  .account-info strong {
+    font-weight: bold;
+  }
 `;

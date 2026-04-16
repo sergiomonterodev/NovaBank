@@ -8,7 +8,7 @@ export class TransferirForm extends LitElement {
   render() {
     return html`
       <form @submit=${this._handleSubmit}>
-        <div style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+        <div class="account-info">
           <p><strong>Tu número de cuenta:</strong> ${store.user.accountNumber || "Cargando..."}</p>
         </div>
 

@@ -105,7 +105,7 @@ export class MovimientosTable extends LitElement {
                     >
                       Borrar
                     </button>
-                  ` : html`<span style="color: #999;">Solo lectura</span>`}
+                  ` : html`<span class="readonly">Solo lectura</span>`}
                 </td>
               </tr>
             `;
