@@ -8,6 +8,33 @@ const mysql = require("mysql2/promise");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+/**
+ * Genera un número de cuenta único con formato AAA000000.
+ * @param {object} connection - Conexión MySQL activa
+ * @returns {Promise<string>}
+ */
+const generateUniqueAccountNumber = async (connection) => {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let accountNumber;
+  let isUnique = false;
+
+  while (!isUnique) {
+    const prefix = Array.from({ length: 3 }, () =>
+      letters.charAt(Math.floor(Math.random() * letters.length))
+    ).join("");
+    const digits = String(Math.floor(Math.random() * 1000000)).padStart(6, "0");
+    accountNumber = `${prefix}${digits}`;
+
+    const [existing] = await connection.query(
+      "SELECT id FROM users WHERE account_number = ?",
+      [accountNumber]
+    );
+    isUnique = existing.length === 0;
+  }
+
+  return accountNumber;
+};
 const SECRET_KEY = process.env.JWT_SECRET || "novabank_secret_key";
 const isTestEnv = process.env.NODE_ENV === "test";
 
@@ -43,14 +70,17 @@ app.post("/api/register", async (req, res) => {
       return res.status(400).json({ message: "El usuario ya existe" });
     }
 
+    // Generar número de cuenta único
+    const accountNumber = await generateUniqueAccountNumber(connection);
+
     // Crear el nuevo usuario (rol 'user' por defecto)
     await connection.query(
-      "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
-      [email, password, "user"]
+      "INSERT INTO users (email, password, role, account_number) VALUES (?, ?, ?, ?)",
+      [email, password, "user", accountNumber]
     );
 
     connection.release();
-    res.status(201).json({ message: "Usuario creado con éxito" });
+    res.status(201).json({ message: "Usuario creado con éxito", accountNumber });
   } catch (error) {
     console.error("Error en registro:", error);
     res.status(500).json({ message: "Error al registrar" });
