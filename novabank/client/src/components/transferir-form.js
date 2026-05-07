@@ -20,12 +20,42 @@ export class TransferirForm extends LitElement {
 
   // ── Opciones de zona horaria UTC ─────────────────────────────────────────
   _timezoneOptions() {
-    const opts = [];
-    for (let i = -12; i <= 14; i++) {
-      const label = i >= 0 ? `UTC+${i}` : `UTC${i}`;
-      opts.push(html`<option value="${i}">${label}</option>`);
-    }
-    return opts;
+    const zones = [
+      { offset: -12, region: "Línea de fecha internacional W" },
+      { offset: -11, region: "Samoa Americana, Niue" },
+      { offset: -10, region: "Hawái, Tahití" },
+      { offset: -9,  region: "Alaska" },
+      { offset: -8,  region: "Los Ángeles, Vancouver (Pacífico)" },
+      { offset: -7,  region: "Denver, Phoenix (Montaña)" },
+      { offset: -6,  region: "Ciudad de México, Chicago (Central)" },
+      { offset: -5,  region: "Nueva York, Bogotá, Lima (Este)" },
+      { offset: -4,  region: "Santiago, Caracas, Halifax" },
+      { offset: -3,  region: "Buenos Aires, São Paulo, Groenlandia" },
+      { offset: -2,  region: "Georgia del Sur" },
+      { offset: -1,  region: "Azores, Cabo Verde" },
+      { offset:  0,  region: "Londres, Lisboa, Dublín (GMT/WET)" },
+      { offset:  1,  region: "Madrid, París, Berlín, Roma (CET)" },
+      { offset:  2,  region: "Atenas, Cairo, Johannesburgo (EET)" },
+      { offset:  3,  region: "Moscú, Nairobi, Riad" },
+      { offset:  4,  region: "Dubái, Bakú, Mauricio" },
+      { offset:  5,  region: "Karachi, Tashkent, Islamabad" },
+      { offset:  5.5,region: "Nueva Delhi, Mumbai (IST)" },
+      { offset:  6,  region: "Dhaka, Almaty, Omsk" },
+      { offset:  7,  region: "Bangkok, Yakarta, Hanói" },
+      { offset:  8,  region: "Pekín, Singapur, Perth, Taipéi" },
+      { offset:  9,  region: "Tokio, Seúl, Yakutsk" },
+      { offset:  9.5,region: "Adelaida, Darwin (ACST)" },
+      { offset: 10,  region: "Sídney, Melbourne, Vladivostok" },
+      { offset: 11,  region: "Islas Salomón, Nueva Caledonia" },
+      { offset: 12,  region: "Auckland, Fiyi, Kamchatka" },
+      { offset: 13,  region: "Samoa, Tonga, Nukualofa" },
+      { offset: 14,  region: "Islas de la Línea (Kiribati)" },
+    ];
+    return zones.map(({ offset, region }) => {
+      const sign = offset >= 0 ? "+" : "";
+      const label = `UTC${sign}${offset} — ${region}`;
+      return html`<option value="${offset}">${label}</option>`;
+    });
   }
 
   // ── Calendario inline ────────────────────────────────────────────────────
@@ -159,7 +189,7 @@ export class TransferirForm extends LitElement {
             @change=${(e) => { this._transferType = e.target.value; }}
           >
             <option value="normal">Transferencia normal</option>
-            <option value="hora">Por hora exacta</option>
+            <option value="hora">Por hora exacta cada mes</option>
             <option value="calendario">Por calendario</option>
             <option value="periodicidad">Periodicidad</option>
           </select>
@@ -208,7 +238,7 @@ export class TransferirForm extends LitElement {
     e.preventDefault();
     const formData = new FormData(e.target);
 
-    const targetAccountNumber = formData.get("targetAccountNumber");
+    const targetAccountNumber = formData.get("targetAccountNumber").trim().toUpperCase();
     const concept = formData.get("concept");
     const amount = parseFloat(formData.get("amount"));
 
