@@ -5,6 +5,8 @@ import { movimientosTableStyles } from "../styles/movimientos-table.styles.js";
 export class MovimientosTable extends LitElement {
   static styles = movimientosTableStyles;
 
+  static DISPLAY_TIMEZONE = "Europe/Madrid";
+
   static properties = {
     editingId: { type: Object },
     deletingId: { type: Object }
@@ -18,7 +20,14 @@ export class MovimientosTable extends LitElement {
     if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
       normalized = `${normalized}T00:00:00`;
     } else if (normalized.includes(" ") && !normalized.includes("T")) {
-      normalized = normalized.replace(" ", "T");
+      // DATETIME de MySQL llega sin zona; se guarda como UTC en backend,
+      // por lo que se marca con Z para convertir correctamente a Europe/Madrid.
+      normalized = `${normalized.replace(" ", "T")}Z`;
+    } else if (
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(normalized)
+    ) {
+      // Algunas respuestas llegan como ISO sin zona; tratarlas como UTC.
+      normalized = `${normalized}Z`;
     }
 
     const parsedDate = new Date(normalized);
@@ -30,12 +39,14 @@ export class MovimientosTable extends LitElement {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: MovimientosTable.DISPLAY_TIMEZONE,
     }).format(parsedDate);
 
     const timePart = new Intl.DateTimeFormat("es-ES", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
+      timeZone: MovimientosTable.DISPLAY_TIMEZONE,
     }).format(parsedDate);
 
     return html`
