@@ -28,6 +28,32 @@ export const movimientosTableStyles = css`
     font-weight: bold;
   }
 
+  .datetime-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 125px;
+  }
+
+  .date-part {
+    font-weight: 600;
+    color: #1f2a37;
+    text-transform: capitalize;
+    line-height: 1.1;
+  }
+
+  .time-part {
+    width: fit-content;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: #0d4d8b;
+    background: #e8f2ff;
+    border: 1px solid #cfe3ff;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-weight: 700;
+  }
+
   button {
     cursor: pointer;
     padding: 5px 10px;

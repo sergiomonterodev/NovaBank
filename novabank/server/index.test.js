@@ -64,7 +64,7 @@ describe("NovaBank server", () => {
   });
 
   test("POST /api/register should create a user", async () => {
-    queueQueryResults([[[]], [{ insertId: 5 }]]);
+    queueQueryResults([[[]], [[]], [{ insertId: 5 }]]);
 
     const response = await request(app)
       .post("/api/register")
