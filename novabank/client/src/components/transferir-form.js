@@ -265,8 +265,9 @@ export class TransferirForm extends LitElement {
         userId: store.user.id,
         concept,
         amount,
-        date: new Date().toISOString().split("T")[0],
+        date: new Date().toISOString(),
         targetAccountNumber,
+        transferType: "normal",
       };
       const success = await store.addMovement(nuevoMovimiento);
       if (success) {

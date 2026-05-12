@@ -10,14 +10,60 @@ export class MovimientosTable extends LitElement {
     deletingId: { type: Object }
   };
 
-  _formatDate(date) {
-    if (!date) return "";
-    // Si la fecha contiene T (formato ISO), tomar solo la parte de la fecha
-    if (date.includes("T")) {
-      return date.split("T")[0];
+  _formatDateTime(dateValue) {
+    if (!dateValue) return html`<span>-</span>`;
+
+    // Soporta fechas en formato YYYY-MM-DD y DATETIME de MySQL.
+    let normalized = String(dateValue).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      normalized = `${normalized}T00:00:00`;
+    } else if (normalized.includes(" ") && !normalized.includes("T")) {
+      normalized = normalized.replace(" ", "T");
     }
-    // Si ya es formato AAAA-MM-DD, devolverla tal cual
-    return date;
+
+    const parsedDate = new Date(normalized);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return html`<span>${String(dateValue)}</span>`;
+    }
+
+    const datePart = new Intl.DateTimeFormat("es-ES", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(parsedDate);
+
+    const timePart = new Intl.DateTimeFormat("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(parsedDate);
+
+    return html`
+      <div class="datetime-cell">
+        <span class="date-part">${datePart}</span>
+        <span class="time-part">${timePart}</span>
+      </div>
+    `;
+  }
+
+  _isTriggerMovement(mov) {
+    return !mov.target_account_number;
+  }
+
+  _getTransferTypeLabel(mov) {
+    if (this._isTriggerMovement(mov)) {
+      return "N/A";
+    }
+
+    const transferType = (mov.transfer_type || mov.transferType || "normal").toLowerCase();
+    const labels = {
+      normal: "Transferencia normal",
+      hora: "Por hora exacta",
+      calendario: "Calendario",
+      periodicidad: "Periodicidad",
+    };
+
+    return labels[transferType] || "Transferencia normal";
   }
 
   constructor() {
@@ -54,7 +100,8 @@ export class MovimientosTable extends LitElement {
           <tr>
             <th>Concepto</th>
             <th>Cantidad</th>
-            <th>Fecha</th>
+            <th>Fecha y hora</th>
+            <th>Tipo de transferencia</th>
             ${store.user.role === "admin" ? html`<th>Usuario ID</th>` : ""}
             <th>Acciones</th>
           </tr>
@@ -80,7 +127,8 @@ export class MovimientosTable extends LitElement {
                 </td>
 
                 <td class="${mov.type}">${mov.amount}€</td>
-                <td>${this._formatDate(mov.date)}</td>
+                <td>${this._formatDateTime(mov.date)}</td>
+                <td>${this._getTransferTypeLabel(mov)}</td>
                 ${store.user.role === "admin" ? html`<td>${mov.userId}</td>` : ""}
                 <td>
                   ${!isReader ? html`
