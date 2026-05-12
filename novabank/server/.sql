@@ -17,6 +17,6 @@ CREATE TABLE movements (
     amount DECIMAL(10, 2) NOT NULL,
     target_account_number VARCHAR(20),
     type ENUM('income', 'expense') NOT NULL,
-    date DATE NOT NULL,
+    date DATETIME NOT NULL,
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );

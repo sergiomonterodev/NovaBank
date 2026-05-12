@@ -48,10 +48,69 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "novabank",
   port: process.env.DB_PORT || 3306,
+  timezone: "Z",
+  dateStrings: true,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
 });
+
+const toMySqlDateTime = (date = new Date()) =>
+  date.toISOString().slice(0, 19).replace("T", " ");
+
+const toUtcIsoString = (value) => {
+  if (!value) return value;
+
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    const hours = String(value.getHours()).padStart(2, "0");
+    const minutes = String(value.getMinutes()).padStart(2, "0");
+    const seconds = String(value.getSeconds()).padStart(2, "0");
+    // Preserva la hora de reloj de MySQL DATETIME y la marca como UTC explícito.
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
+  }
+
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return `${raw}T00:00:00.000Z`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(raw)) {
+    return `${raw.replace(" ", "T")}Z`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(raw)) {
+    return `${raw}Z`;
+  }
+
+  return raw;
+};
+
+const normalizeMovementDate = (movement) => ({
+  ...movement,
+  date: toUtcIsoString(movement.date),
+});
+
+const ensureMovementsDateTimeColumn = async () => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [columns] = await connection.query("SHOW COLUMNS FROM movements LIKE 'date'");
+
+    if (columns.length > 0 && String(columns[0].Type).toLowerCase() === "date") {
+      await connection.query("ALTER TABLE movements MODIFY COLUMN date DATETIME NOT NULL");
+      console.log("✅ Columna movements.date migrada de DATE a DATETIME");
+    }
+  } catch (error) {
+    console.error("Error validando/migrando columna movements.date:", error);
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+};
 
 // Endpoint de Register
 app.post("/api/register", async (req, res) => {
@@ -139,7 +198,7 @@ app.get("/api/movements", async (req, res) => {
     const [movements] = await connection.query(query, params);
     connection.release();
 
-    res.json(movements);
+    res.json(movements.map(normalizeMovementDate));
   } catch (error) {
     console.error("Error al obtener movimientos:", error);
     res.status(500).json({ message: "Error al leer datos" });
@@ -173,7 +232,7 @@ app.get("/api/user/:id", async (req, res) => {
 
 // Endpoint para crear movimientos (transferencias)
 app.post("/api/movements", async (req, res) => {
-  const { userId, concept, amount, date, userRole, targetAccountNumber } = req.body;
+  const { userId, concept, amount, userRole, targetAccountNumber } = req.body;
 
   // Los lectores no pueden crear movimientos
   if (userRole === "reader") {
@@ -215,10 +274,12 @@ app.post("/api/movements", async (req, res) => {
       return res.status(404).json({ message: "Cuenta destino no encontrada" });
     }
 
+    const movementDateTime = toMySqlDateTime();
+
     // Insertar el movimiento (siempre como "expense" para el usuario origen)
     await connection.query(
       "INSERT INTO movements (userId, concept, amount, type, date, target_account_number) VALUES (?, ?, ?, ?, ?, ?)",
-      [userId, concept, -Math.abs(amount), "expense", date, targetAccountNumber]
+      [userId, concept, -Math.abs(amount), "expense", movementDateTime, targetAccountNumber]
     );
 
     // Actualizar saldo del usuario origen (restar)
@@ -236,7 +297,7 @@ app.post("/api/movements", async (req, res) => {
     // Instert movimiento para el usuario destino (como income)
     await connection.query(
       "INSERT INTO movements (userId, concept, amount, type, date, target_account_number) VALUES (?, ?, ?, ?, ?, ?)",
-      [targetUser[0].id, concept, Math.abs(amount), "income", date, targetAccountNumber]
+      [targetUser[0].id, concept, Math.abs(amount), "income", movementDateTime, targetAccountNumber]
     );
 
     const [newMovement] = await connection.query(
@@ -245,7 +306,7 @@ app.post("/api/movements", async (req, res) => {
     );
 
     connection.release();
-    res.status(201).json(newMovement[0]);
+    res.status(201).json(normalizeMovementDate(newMovement[0]));
   } catch (error) {
     console.error("Error al crear movimiento:", error);
     res.status(500).json({ message: "Error al crear movimiento" });
@@ -508,7 +569,7 @@ const runAutoTransactions = async () => {
     // Crear un movimiento para CADA usuario registrado
     for (const user of users) {
       const transaction = getRandomTransaction();
-      const today = new Date().toISOString().split("T")[0];
+      const now = toMySqlDateTime();
 
       await connection.query(
         "INSERT INTO movements (userId, concept, amount, type, date) VALUES (?, ?, ?, ?, ?)",
@@ -517,7 +578,7 @@ const runAutoTransactions = async () => {
           transaction.concept,
           transaction.amount,
           transaction.amount >= 0 ? "income" : "expense",
-          today,
+          now,
         ]
       );
 
@@ -536,6 +597,7 @@ const runAutoTransactions = async () => {
 };
 
 if (!isTestEnv) {
+  ensureMovementsDateTimeColumn();
   setInterval(runAutoTransactions, 120000);
 }
 
